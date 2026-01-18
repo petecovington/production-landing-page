@@ -1,0 +1,493 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, Pause, Check, X, Music, Mic, Disc, Sliders, Calendar, ArrowRight, Star, Film } from 'lucide-react';
+
+// --- Utility Components ---
+
+const Button = ({ children, variant = "primary", className = "", ...props }) => {
+  const baseStyles = "px-8 py-4 font-bold uppercase tracking-wider transition-all duration-300 transform hover:-translate-y-1 active:translate-y-0 border-2";
+
+  const variants = {
+    primary: "bg-[#8B1E1E] text-[#F9F5EB] border-[#8B1E1E] hover:bg-[#681212] hover:border-[#681212] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.8)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.8)]",
+    secondary: "bg-transparent text-[#2D241E] border-[#2D241E] hover:bg-[#2D241E] hover:text-[#F9F5EB] shadow-[4px_4px_0px_0px_rgba(139,30,30,0.3)]"
+  };
+
+  return (
+    <button className={`${baseStyles} ${variants[variant]} ${className}`} {...props}>
+      {children}
+    </button>
+  );
+};
+
+// CSS-based Torn Paper Edge
+const TornEdge = ({ direction = "bottom", color = "#F9F5EB" }) => (
+  <div
+    className={`absolute w-full h-8 z-20 ${direction === "top" ? "-top-8 rotate-180" : "bottom-0"}`}
+    style={{
+      backgroundImage: `linear-gradient(135deg, ${color} 50%, transparent 50%), linear-gradient(-135deg, ${color} 50%, transparent 50%)`,
+      backgroundSize: "20px 20px",
+      backgroundRepeat: "repeat-x"
+    }}
+  />
+);
+
+const Section = ({ children, className = "", id = "", addTornEdge = false, edgeColor = "#F9F5EB" }) => (
+  <section id={id} className={`relative py-24 px-6 md:px-12 ${className}`}>
+    {addTornEdge && <TornEdge direction="bottom" color={edgeColor} />}
+    <div className="max-w-7xl mx-auto relative z-10">
+      {children}
+    </div>
+  </section>
+);
+
+const FadeIn = ({ children, delay = 0 }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const domRef = useRef();
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => setIsVisible(entry.isIntersecting));
+    });
+    const currentRef = domRef.current;
+    if (currentRef) observer.observe(currentRef);
+    return () => currentRef && observer.unobserve(currentRef);
+  }, []);
+
+  return (
+    <div
+      ref={domRef}
+      className={`transition-all duration-1000 transform ${
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+      }`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+};
+
+// --- Vintage Switch Player Component ---
+const VintagePlayer = () => {
+  const [mode, setMode] = useState('seed'); // 'seed' or 'harvest'
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    let interval;
+    if (playing) {
+      interval = setInterval(() => {
+        setProgress((prev) => (prev >= 100 ? 0 : prev + 1));
+      }, 50);
+    }
+    return () => clearInterval(interval);
+  }, [playing]);
+
+  const toggleMode = () => {
+    setMode(prev => prev === 'seed' ? 'harvest' : 'seed');
+    setProgress(0);
+    setPlaying(true);
+  };
+
+  return (
+    <div className={`relative p-8 md:p-12 rounded-lg border-4 border-[#2D241E] transition-colors duration-700 ${mode === 'harvest' ? 'bg-[#704214]' : 'bg-[#E5DCC5]'} shadow-[8px_8px_0px_0px_rgba(45,36,30,1)]`}>
+      {/* Texture Overlay */}
+      <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/aged-paper.png")' }}></div>
+
+      <div className="relative z-10 flex flex-col md:flex-row gap-12 items-center">
+
+        {/* Controls */}
+        <div className="flex-1 space-y-8 w-full">
+          <div className="flex justify-center space-x-12">
+            <div className="text-center cursor-pointer group" onClick={() => setMode('seed')}>
+              <div className={`w-4 h-4 rounded-full mx-auto mb-2 border-2 border-[#2D241E] transition-colors ${mode === 'seed' ? 'bg-[#8B1E1E]' : 'bg-transparent'}`} />
+              <span className={`font-mono text-sm uppercase tracking-widest font-bold ${mode === 'seed' ? 'text-[#8B1E1E]' : 'text-[#2D241E]/50'}`}>The Voice Memo</span>
+            </div>
+
+            {/* Toggle Switch Visual */}
+            <div
+              onClick={toggleMode}
+              className="w-16 h-8 bg-[#2D241E] rounded-full relative cursor-pointer shadow-inner"
+            >
+              <div className={`absolute top-1 w-6 h-6 bg-[#D69E2E] rounded-full shadow transition-all duration-300 ${mode === 'harvest' ? 'left-9' : 'left-1'}`} />
+            </div>
+
+            <div className="text-center cursor-pointer group" onClick={() => setMode('harvest')}>
+              <div className={`w-4 h-4 rounded-full mx-auto mb-2 border-2 border-[#2D241E] transition-colors ${mode === 'harvest' ? 'bg-[#D69E2E]' : 'bg-transparent'}`} />
+              <span className={`font-mono text-sm uppercase tracking-widest font-bold ${mode === 'harvest' ? 'text-[#D69E2E] text-shadow' : 'text-[#2D241E]/50'}`}>The Finished Song</span>
+            </div>
+          </div>
+
+          {/* VU Meter / Visualizer */}
+          <div className="bg-[#1a1512] p-4 rounded border-2 border-[#2d241e] h-24 flex items-center justify-center relative overflow-hidden">
+            <div className="flex items-end space-x-1 h-16 w-full opacity-80">
+              {[...Array(30)].map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-full transition-all duration-100 ${mode === 'harvest' ? 'bg-[#D69E2E]' : 'bg-[#8B1E1E]'}`}
+                  style={{
+                    height: playing ? `${Math.random() * 100}%` : '5%',
+                    opacity: playing ? 1 : 0.3
+                  }}
+                />
+              ))}
+            </div>
+            {/* Glass Glare */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none"></div>
+          </div>
+
+          <button
+            onClick={() => setPlaying(!playing)}
+            className={`w-full py-4 font-mono uppercase font-bold tracking-widest border-2 border-[#2D241E] hover:bg-[#2D241E] hover:text-[#F9F5EB] transition-colors ${mode === 'harvest' ? 'bg-[#D69E2E] text-[#2D241E]' : 'bg-transparent text-[#2D241E]'}`}
+          >
+            {playing ? 'Stop' : 'Play'}
+          </button>
+        </div>
+
+        {/* Note */}
+        <div className="flex-1 relative">
+            <div className="absolute -top-6 -left-6 -right-6 -bottom-6 bg-white shadow-xl rotate-2 transform z-0"></div>
+            <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-32 h-8 bg-[#D4C4A8]/60 backdrop-blur-sm transform -rotate-1 shadow-sm z-20"></div> {/* Tape */}
+            <div className="relative z-10 p-6 bg-[#fffdf5]">
+                <p className="font-serif italic text-2xl text-[#2D241E] leading-relaxed">
+                   "I sent Pete a voice memo I'd been sitting on for months. He heard what I was trying to say and helped me actually say it. The finished song sounds like me, just... more."
+                </p>
+                <div className="mt-4 text-right font-mono text-xs uppercase text-[#2D241E]/60 tracking-widest">
+                    — Sarah J. // "Midnight in Tokyo"
+                </div>
+            </div>
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
+// --- Main Application ---
+
+export default function App() {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToApply = () => {
+    document.getElementById('apply').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F9F5EB] text-[#2D241E] font-sans selection:bg-[#8B1E1E] selection:text-[#F9F5EB] overflow-x-hidden">
+
+      {/* Grain Overlay */}
+      <div className="fixed inset-0 pointer-events-none opacity-40 mix-blend-multiply z-50"
+           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.5'/%3E%3C/svg%3E")` }}>
+      </div>
+
+      {/* Navigation */}
+      <nav className={`fixed top-0 w-full z-40 transition-all duration-300 ${scrolled ? 'bg-[#F9F5EB]/90 backdrop-blur-md border-b-2 border-[#2D241E]/10 py-3' : 'bg-transparent py-6'}`}>
+        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
+          <div className="text-xl font-bold tracking-tight flex items-center gap-2 font-serif text-[#2D241E]">
+            <Disc className="animate-spin-slow" />
+            PETE COVINGTON
+          </div>
+          <button onClick={scrollToApply} className="hidden md:block font-mono text-xs font-bold uppercase tracking-widest hover:text-[#8B1E1E] transition-colors border-b-2 border-transparent hover:border-[#8B1E1E]">
+            Contact
+          </button>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <header className="relative pt-40 pb-24 md:pt-48 md:pb-40 px-6 bg-[#F5F0E1]">
+         {/* Background Collage Elements */}
+         <div className="absolute top-0 right-0 w-1/3 h-full bg-[#D69E2E] opacity-10 mix-blend-multiply clip-path-polygon-[0_0,100%_0,100%_100%,20%_100%]"></div>
+         <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full bg-[#8B1E1E] opacity-10 blur-3xl"></div>
+
+         <div className="max-w-5xl mx-auto text-center relative z-10">
+          <FadeIn>
+            <div className="inline-block px-4 py-2 border-2 border-[#2D241E] bg-[#F9F5EB] text-xs font-mono font-bold uppercase tracking-widest mb-8 shadow-[4px_4px_0px_0px_#D69E2E] transform -rotate-1">
+               Currently Working With: The Velvets
+            </div>
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif font-black text-[#2D241E] leading-[0.9] mb-8 tracking-tight">
+              From <span className="text-[#8B1E1E] italic font-light">Voice Memo</span> to <br/>Finished Song <br/>in 30 Days.
+            </h1>
+            <p className="text-xl md:text-2xl font-mono text-[#2D241E]/80 max-w-2xl mx-auto mb-12 leading-relaxed">
+              A meaningful creative process to a finished song you're proud of.
+            </p>
+            <div className="flex flex-col items-center gap-6">
+              <Button variant="primary" onClick={scrollToApply}>Start the Process</Button>
+
+              <div className="w-full max-w-2xl mt-8 border-t-2 border-[#2D241E] pt-4 flex flex-wrap justify-between gap-4 font-mono text-xs uppercase tracking-wider text-[#2D241E]/60">
+                 <span>Recent Release: "Golden Hour"</span>
+                 <span className="text-[#8B1E1E] font-bold">4 Slots Open for October</span>
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+      </header>
+
+      {/* The Transformation (Alchemy) */}
+      <Section className="bg-[#F9F5EB]">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-6xl font-serif font-bold text-[#2D241E] mb-4">Recent Transformations</h2>
+          <p className="font-mono text-[#2D241E]/60 uppercase tracking-widest">From demo to finished track.</p>
+        </div>
+
+        <FadeIn>
+           <div className="relative max-w-7xl mx-auto">
+              {/* Scroll Indicator - Left */}
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 z-30 pointer-events-none">
+                <div className="bg-[#8B1E1E] text-[#F9F5EB] p-4 rounded-r-lg shadow-xl animate-pulse">
+                  <ArrowRight className="rotate-180" size={32} />
+                </div>
+              </div>
+
+              {/* Scroll Indicator - Right */}
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 z-30 pointer-events-none">
+                <div className="bg-[#8B1E1E] text-[#F9F5EB] p-4 rounded-l-lg shadow-xl animate-pulse">
+                  <ArrowRight size={32} />
+                </div>
+              </div>
+
+              {/* Scrollable Container */}
+              <div className="overflow-x-auto pb-8 scrollbar-thin scrollbar-thumb-[#8B1E1E] scrollbar-track-[#E5DCC5]">
+                <div className="flex gap-8 px-4 min-w-max">
+                  <div className="max-w-4xl flex-shrink-0">
+                    <VintagePlayer />
+                  </div>
+                  <div className="max-w-4xl flex-shrink-0">
+                    <VintagePlayer />
+                  </div>
+                  <div className="max-w-4xl flex-shrink-0">
+                    <VintagePlayer />
+                  </div>
+                  <div className="max-w-4xl flex-shrink-0">
+                    <VintagePlayer />
+                  </div>
+                  <div className="max-w-4xl flex-shrink-0">
+                    <VintagePlayer />
+                  </div>
+                </div>
+              </div>
+           </div>
+        </FadeIn>
+      </Section>
+
+      {/* The Methodology (Manifesto) */}
+      <Section className="bg-[#8B1E1E] text-[#F9F5EB]">
+        <div className="grid md:grid-cols-12 gap-12 items-start">
+            <div className="md:col-span-4 sticky top-32">
+                 <h2 className="text-5xl md:text-7xl font-serif font-bold leading-none mb-6 text-[#D69E2E]">How <br/>I <br/>Work</h2>
+                 <div className="w-24 h-2 bg-[#F9F5EB] mb-6"></div>
+                 <p className="font-mono text-sm leading-relaxed opacity-80">
+                    I believe the process of making music matters as much as the finished song. Here's what that looks like in practice.
+                 </p>
+                 {/* Decorative Circle */}
+                 <div className="mt-12 w-32 h-32 border-4 border-[#D69E2E] rounded-full flex items-center justify-center opacity-50 animate-spin-slow">
+                    <Star size={64} />
+                 </div>
+            </div>
+
+            <div className="md:col-span-8 space-y-16">
+                {[
+                    {
+                        title: "The Process Is the Purpose",
+                        desc: "There's a version of music-making that skips the work entirely. Generate a track, get a result, move on. I'm not interested in that, and I don't think you are either. The process of making a song - the decisions, the discoveries, the moments where it clicks - that's where the meaning lives. That's where you become the artist who made the thing. My job is to guide that process, not bypass it."
+                    },
+                    {
+                        title: "Song First",
+                        desc: "Before we start tracking, I want to understand your song inside and out. What's it really about? What's the feeling you're chasing? Sometimes that conversation sparks ideas for arrangement or production. Sometimes it just gives us clarity. Either way, every decision we make from there is in service of what you've already written."
+                    },
+                    {
+                        title: "Real Performances by Real Humans",
+                        desc: "I'm not interested in making music that sounds like it was assembled from parts. We'll capture actual performances: yours, mine, and when needed, session musicians I trust. The goal is music that breathes and feels like it was made by people who care."
+                    },
+                    {
+                        title: "It's Your Sound",
+                        desc: "This is collaborative, not \"hand it off and hope for the best.\" You'll be involved at every stage, giving feedback as the song develops. I bring technical skills and creative ideas, but the song stays yours. I'm here to serve what you're trying to say, not impose my vision on top of it."
+                    }
+                ].map((pillar, i) => (
+                    <FadeIn key={i} delay={i * 100}>
+                        <div className="relative pl-8 border-l-4 border-[#D69E2E]">
+                            <h3 className="text-3xl font-serif font-bold mb-4 text-[#F9F5EB]">{pillar.title}</h3>
+                            <p className="font-mono text-lg leading-relaxed text-[#F9F5EB]/80">
+                                {pillar.desc}
+                            </p>
+                        </div>
+                    </FadeIn>
+                ))}
+            </div>
+        </div>
+      </Section>
+
+      {/* 30-Day Session Timeline (Film Strip) */}
+      <Section className="bg-[#F5F0E1] overflow-hidden">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-serif font-bold text-[#2D241E]">The 30-Day Process</h2>
+          <div className="h-1 w-20 bg-[#8B1E1E] mx-auto mt-6"></div>
+        </div>
+
+        {/* Film Strip Container */}
+        <div className="relative py-12">
+            <div className="absolute top-0 left-0 w-full h-8 bg-black flex justify-between px-2 overflow-hidden">
+                {[...Array(40)].map((_, i) => <div key={i} className="w-4 h-6 bg-white/80 mt-1 rounded-sm mx-4"></div>)}
+            </div>
+            <div className="absolute bottom-0 left-0 w-full h-8 bg-black flex justify-between px-2 overflow-hidden">
+                {[...Array(40)].map((_, i) => <div key={i} className="w-4 h-6 bg-white/80 mt-1 rounded-sm mx-4"></div>)}
+            </div>
+
+            <div className="bg-[#2D241E] py-12 px-4 overflow-x-auto">
+                <div className="flex gap-8 min-w-max">
+                    {[
+                        { week: "Week 1", title: "Vision & Discovery", focus: "We start with a real conversation about your song, your influences, and what you're hoping this track becomes. I'll listen to your demo more times than you'd expect, pulling out the details that make it yours.", goal: "By the end of the week, we'll have a clear production direction and often a rough demo that serves as our roadmap." },
+                        { week: "Week 2", title: "Building the Foundation", focus: "This is where the song starts taking shape. We'll track drums and rhythm section, make arrangement decisions, and establish the sonic world of the track.", goal: "You'll hear it evolve from voice memo to something with bones. Regular check-ins mean nothing moves forward without you feeling good about it." },
+                        { week: "Week 3", title: "Vocals & Performance", focus: "The heart of the record. We'll capture your lead vocal when you're ready, not rushed, not overthought. Then backing vocals, harmonies, and any final overdubs that serve the song.", goal: "This is also where we do the detail work: editing, tuning, and making sure every performance feels right." },
+                        { week: "Week 4", title: "Mix, Master & Delivery", focus: "I'll craft a mix that gives every element its place, with revision rounds until it feels exactly right to you.", goal: "Then it goes to mastering, and you'll receive everything you need: final masters, stems, instrumental versions, and a clear path toward release." }
+                    ].map((item, i) => (
+                        <div key={i} className="w-80 bg-[#F9F5EB] p-6 relative group transform rotate-1 hover:rotate-0 transition-transform duration-300 shadow-xl">
+                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-16 h-6 bg-[#D69E2E]/80 opacity-50"></div> {/* Tape effect */}
+                            <span className="font-mono text-xs font-bold text-[#8B1E1E] uppercase tracking-widest block mb-2">{item.week}</span>
+                            <h3 className="font-serif text-2xl font-bold text-[#2D241E] mb-4 leading-tight">{item.title}</h3>
+                            <p className="font-mono text-xs mb-4 opacity-80 border-b border-[#2D241E]/10 pb-4">{item.focus}</p>
+                            <div>
+                                <span className="font-bold text-xs uppercase text-[#D69E2E]">Goal:</span>
+                                <p className="font-serif italic text-lg leading-tight mt-1">{item.goal}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+      </Section>
+
+      {/* Deliverables */}
+      <Section className="bg-[#F9F5EB]">
+        <div className="border-4 border-[#2D241E] p-8 md:p-12 relative max-w-5xl mx-auto">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#F9F5EB] px-6">
+                <h2 className="text-3xl font-serif font-bold text-[#2D241E]">What You Walk Away With</h2>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-12 mt-8">
+                <div>
+                     <h3 className="font-mono font-bold uppercase tracking-widest text-[#8B1E1E] mb-6">Production & Engineering</h3>
+                     <ul className="space-y-4">
+                        {["Full instrumentation and arrangement", "Vocal editing and tuning", "Professional mix with revision rounds"].map((item, i) => (
+                            <li key={i} className="flex items-center gap-3 font-serif text-lg text-[#2D241E]">
+                                <div className="w-2 h-2 bg-[#2D241E] rounded-full"></div>
+                                {item}
+                            </li>
+                        ))}
+                     </ul>
+                </div>
+                <div>
+                     <h3 className="font-mono font-bold uppercase tracking-widest text-[#8B1E1E] mb-6">Final Files</h3>
+                     <ul className="space-y-4">
+                        {[
+                            "Mastered WAV (44.1kHz/16bit) for streaming",
+                            "High-res WAV (48kHz/24bit) for sync and licensing",
+                            "Instrumental mix",
+                            "Performance/backing track mix",
+                            "Full multi-track stems"
+                        ].map((item, i) => (
+                            <li key={i} className="flex items-center gap-3 font-serif text-lg text-[#2D241E]">
+                                <Disc size={16} />
+                                {item}
+                            </li>
+                        ))}
+                     </ul>
+                </div>
+            </div>
+            <div className="mt-12 p-6 bg-[#D69E2E]/20 border-2 border-dashed border-[#D69E2E] text-center">
+                <span className="font-bold font-mono uppercase text-[#8B1E1E] text-xs tracking-widest block mb-2">Bonus</span>
+                <p className="font-serif text-xl">A release-ready checklist covering distribution, artwork specs, and promotional basics so you're not guessing what comes next.</p>
+            </div>
+        </div>
+      </Section>
+
+      {/* Filter (Who This Is For) */}
+      <Section className="bg-[#2D241E] text-[#F9F5EB]">
+        <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-[#D69E2E]">Is This Right for You?</h2>
+        </div>
+        <div className="grid md:grid-cols-2 gap-16">
+            <div>
+                <h3 className="text-3xl font-serif font-bold mb-8 text-[#D69E2E]">This is for you if...</h3>
+                <ul className="space-y-6 font-mono">
+                    <li className="flex gap-4">
+                        <Check className="text-[#D69E2E] shrink-0" />
+                        <span className="opacity-90">You have a song you believe in and want to give it the production it deserves</span>
+                    </li>
+                    <li className="flex gap-4">
+                        <Check className="text-[#D69E2E] shrink-0" />
+                        <span className="opacity-90">You're ready to show up and be part of the process, not just hand something off</span>
+                    </li>
+                    <li className="flex gap-4">
+                        <Check className="text-[#D69E2E] shrink-0" />
+                        <span className="opacity-90">You want a collaborator who cares about craft, not just someone to "make it sound professional"</span>
+                    </li>
+                </ul>
+            </div>
+            <div>
+                <h3 className="text-3xl font-serif font-bold mb-8 text-[#8B1E1E]">This probably isn't for you if...</h3>
+                <ul className="space-y-6 font-mono">
+                    <li className="flex gap-4">
+                        <X className="text-[#8B1E1E] shrink-0" />
+                        <span className="opacity-60">You want to sound exactly like someone else</span>
+                    </li>
+                    <li className="flex gap-4">
+                        <X className="text-[#8B1E1E] shrink-0" />
+                        <span className="opacity-60">You're not open to feedback on the song itself</span>
+                    </li>
+                    <li className="flex gap-4">
+                        <X className="text-[#8B1E1E] shrink-0" />
+                        <span className="opacity-60">You're looking for the cheapest option</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+      </Section>
+
+      {/* CTA / Application */}
+      <section id="apply" className="py-32 px-6 bg-[#F5F0E1] text-center relative overflow-hidden">
+         {/* Background Collage */}
+         <div className="absolute inset-0 z-0 opacity-10" style={{ backgroundImage: `radial-gradient(#D69E2E 1px, transparent 1px)`, backgroundSize: '30px 30px' }}></div>
+
+         <div className="relative z-10 max-w-3xl mx-auto">
+            <h2 className="text-5xl md:text-7xl font-serif font-black text-[#2D241E] mb-6">Ready to finish something?</h2>
+
+            <div className="inline-block bg-[#8B1E1E] text-[#F9F5EB] px-4 py-1 font-mono text-sm uppercase tracking-widest mb-12 transform rotate-2">
+                I take on 4 projects per month to give each one the attention it deserves.
+            </div>
+
+            <div className="bg-[#F9F5EB] p-8 md:p-12 border-4 border-[#2D241E] shadow-[12px_12px_0px_0px_rgba(45,36,30,1)] text-left mb-12 transform -rotate-1">
+                <div className="space-y-6 font-mono">
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-60">Link to your demo</label>
+                        <div className="h-10 border-b-2 border-[#2D241E] bg-[#F5F0E1]/50"></div>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-60">Your budget range</label>
+                        <div className="h-10 border-b-2 border-[#2D241E] bg-[#F5F0E1]/50"></div>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-60">When are you hoping to release?</label>
+                        <div className="h-10 border-b-2 border-[#2D241E] bg-[#F5F0E1]/50"></div>
+                    </div>
+                </div>
+            </div>
+
+            <Button variant="primary" className="text-xl px-12 py-6">Book a Call</Button>
+
+            <p className="mt-8 font-mono text-xs opacity-60 uppercase tracking-widest">
+                I personally review every application within 48 hours.
+            </p>
+         </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-[#2D241E] text-[#F9F5EB] py-12 text-center">
+        <p className="font-mono text-xs opacity-40 uppercase tracking-widest">&copy; {new Date().getFullYear()} Pete Covington</p>
+      </footer>
+    </div>
+  );
+}

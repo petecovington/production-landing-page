@@ -1,0 +1,13 @@
+@font-face {
+	font-family: 'Haas Grotesk Text R Web';
+	src: url('NeueHaasGroteskText(RoundDots)-75Bold-Web.woff2') format('woff2'),
+		 url('NeueHaasGroteskText(RoundDots)-75Bold-Web.woff') format('woff');
+	font-weight: 700;
+	font-style: normal;
+	}
+
+.NeueHaasGroteskText(RoundDots)-75Bold-Web {
+	font-family: 'Haas Grotesk Text R Web';
+	font-weight: 700;
+	font-style: normal;
+	}

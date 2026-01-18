@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Neue Haas Grotesk';
+  src: url('/fonts/NeueHaasGrotesk-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Triplicate';
+  src: url('/fonts/Triplicate-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Triplicate';
+  src: url('/fonts/Triplicate-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Triplicate';
+  src: url('/fonts/Triplicate-Italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@layer base {
+  body {
+    @apply antialiased;
+    font-family: 'Triplicate', ui-sans-serif, system-ui;
+  }
+}

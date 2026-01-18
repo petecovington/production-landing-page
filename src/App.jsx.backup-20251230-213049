@@ -1,0 +1,395 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, Pause, Check, X, Music, Mic, Disc, Calendar, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+
+// --- Utility Components ---
+
+const Button = ({ children, variant = "primary", className = "", ...props }) => {
+  const baseStyles = "px-8 py-4 font-bold uppercase tracking-wider transition-all duration-300 transform hover:-translate-y-1 active:translate-y-0 border-2";
+
+  const variants = {
+    primary: "bg-[#8B1E1E] text-[#F9F5EB] border-[#8B1E1E] hover:bg-[#681212] hover:border-[#681212] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.8)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.8)]",
+    secondary: "bg-transparent text-[#2D241E] border-[#2D241E] hover:bg-[#2D241E] hover:text-[#F9F5EB] shadow-[4px_4px_0px_0px_rgba(139,30,30,0.3)]"
+  };
+
+  return (
+    <button className={`${baseStyles} ${variants[variant]} ${className}`} {...props}>
+      {children}
+    </button>
+  );
+};
+
+const Section = ({ children, className = "", id = "" }) => (
+  <section id={id} className={`relative py-24 px-6 md:px-12 ${className}`}>
+    <div className="max-w-7xl mx-auto relative z-10">
+      {children}
+    </div>
+  </section>
+);
+
+const FadeIn = ({ children, delay = 0 }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const domRef = useRef();
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => setIsVisible(entry.isIntersecting));
+    });
+    const currentRef = domRef.current;
+    if (currentRef) observer.observe(currentRef);
+    return () => currentRef && observer.unobserve(currentRef);
+  }, []);
+
+  return (
+    <div
+      ref={domRef}
+      className={`transition-all duration-1000 transform ${
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+      }`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+};
+
+// --- Audio Player Component ---
+const AudioPlayer = ({ label, isDemo = false, playerId, currentlyPlaying, onPlay }) => {
+  const isPlaying = currentlyPlaying === playerId;
+
+  const handlePlay = () => {
+    if (isPlaying) {
+      onPlay(null); // Stop this player
+    } else {
+      onPlay(playerId); // Start this player (and stop others)
+    }
+  };
+
+  return (
+    <div className={`p-6 border-2 border-[#2D241E] ${isDemo ? 'bg-[#E5DCC5]' : 'bg-[#704214]'} transition-all`}>
+      <div className="text-xs font-mono uppercase tracking-widest mb-3 opacity-60">{label}</div>
+      <button
+        onClick={handlePlay}
+        className="w-full py-3 font-mono uppercase font-bold tracking-widest border-2 border-[#2D241E] bg-transparent hover:bg-[#2D241E] hover:text-[#F9F5EB] transition-colors flex items-center justify-center gap-2"
+      >
+        {isPlaying ? <><Pause size={16} /> Stop</> : <><Play size={16} /> Play</>}
+      </button>
+    </div>
+  );
+};
+
+// --- Main Application ---
+
+export default function App() {
+  const [scrolled, setScrolled] = useState(false);
+  const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToContact = () => {
+    document.getElementById('contact').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F9F5EB] text-[#2D241E] font-sans selection:bg-[#8B1E1E] selection:text-[#F9F5EB] overflow-x-hidden">
+
+      {/* Grain Overlay */}
+      <div className="fixed inset-0 pointer-events-none opacity-40 mix-blend-multiply z-50"
+           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.5'/%3E%3C/svg%3E")` }}>
+      </div>
+
+      {/* Navigation */}
+      <nav className={`fixed top-0 w-full z-40 transition-all duration-300 ${scrolled ? 'bg-[#F9F5EB]/90 backdrop-blur-md border-b-2 border-[#2D241E]/10 py-3' : 'bg-transparent py-6'}`}>
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-xl font-bold tracking-tight flex items-center gap-2 font-serif text-[#2D241E]">
+            <Disc className="animate-spin-slow" />
+            PETE COVINGTON
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <header className="relative pt-40 pb-32 md:pt-48 md:pb-40 px-6 bg-[#F5F0E1]">
+         <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full bg-[#8B1E1E] opacity-10 blur-3xl"></div>
+
+         <div className="max-w-5xl mx-auto relative z-10">
+          <FadeIn>
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-black text-[#2D241E] leading-[0.95] mb-8 tracking-tight">
+              Turn Your Demos into <br/><span className="text-[#8B1E1E]">Timeless Records</span>.
+            </h1>
+            <p className="text-xl md:text-2xl font-serif italic text-[#2D241E]/80 max-w-2xl mb-12 leading-relaxed">
+              I help songwriters bridge the gap between rough ideas and professional releases, preserving the emotion that made the song special in the first place.
+            </p>
+
+            {/* Studio Image Placeholder */}
+            <div className="w-full h-96 bg-[#2D241E]/10 border-2 border-[#2D241E]/20 mb-8 flex items-center justify-center">
+              <span className="text-[#2D241E]/40 font-mono text-sm">Studio / Workspace Image</span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <Button variant="primary" onClick={scrollToContact}>Book an Intro Call</Button>
+              <Button variant="secondary" onClick={scrollToContact}>Email About Your Project</Button>
+            </div>
+          </FadeIn>
+        </div>
+      </header>
+
+      {/* VSL Section */}
+      <Section className="bg-[#F9F5EB]">
+        <FadeIn>
+          <div className="max-w-4xl mx-auto">
+            <div className="aspect-video w-full bg-[#2D241E]/10 border-2 border-[#2D241E]/20 flex items-center justify-center">
+              <div className="text-center">
+                <Play size={64} className="mx-auto mb-4 text-[#2D241E]/40" />
+                <span className="text-[#2D241E]/40 font-mono text-sm">VSL Placeholder (Script Pending)</span>
+              </div>
+            </div>
+          </div>
+        </FadeIn>
+      </Section>
+
+      {/* Proof Section - Demo vs Production */}
+      <Section className="bg-[#F5F0E1]">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-6xl font-serif font-bold text-[#2D241E] mb-4">From Demo to Final Master</h2>
+          <p className="font-serif italic text-xl text-[#2D241E]/60">Hear how a rough idea transforms through the production process.</p>
+        </div>
+
+        <FadeIn>
+          <div className="max-w-5xl mx-auto space-y-20">
+            {/* Example 1 */}
+            <div className="bg-[#F9F5EB] p-8 md:p-12 border-2 border-[#2D241E] shadow-lg">
+              <h3 className="text-2xl font-serif font-bold mb-2">Annie Hamilton - "Existence Isn't Ease"</h3>
+              <p className="text-sm font-mono mb-6 text-[#2D241E]/60">
+                We took Annie's acoustic demo and added a driving rhythm section to give it the energy it needed for radio, while keeping the vocal front and center.
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-6 mb-8">
+                <AudioPlayer label="The Voice Memo / Home Demo" isDemo={true} playerId="annie-demo" currentlyPlaying={currentlyPlaying} onPlay={setCurrentlyPlaying} />
+                <AudioPlayer label="The Produced Record" isDemo={false} playerId="annie-final" currentlyPlaying={currentlyPlaying} onPlay={setCurrentlyPlaying} />
+              </div>
+
+              <div className="border-l-4 border-[#8B1E1E] pl-6 py-4 bg-white/50">
+                <p className="font-serif italic text-lg leading-relaxed mb-2">
+                  "Pete has a super creative ear and truly helped me bring my vision to life."
+                </p>
+                <p className="font-mono text-sm uppercase tracking-wider text-[#2D241E]/60">— Annie Hamilton</p>
+              </div>
+            </div>
+
+            {/* Example 2 Placeholder */}
+            <div className="bg-[#F9F5EB] p-8 md:p-12 border-2 border-[#2D241E] shadow-lg opacity-50">
+              <h3 className="text-2xl font-serif font-bold mb-2">[Artist Name] - [Track Title]</h3>
+              <p className="text-sm font-mono mb-6 text-[#2D241E]/60">
+                [One-sentence story about problem solved]
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-6 mb-8">
+                <AudioPlayer label="The Voice Memo / Home Demo" isDemo={true} playerId="artist2-demo" currentlyPlaying={currentlyPlaying} onPlay={setCurrentlyPlaying} />
+                <AudioPlayer label="The Produced Record" isDemo={false} playerId="artist2-final" currentlyPlaying={currentlyPlaying} onPlay={setCurrentlyPlaying} />
+              </div>
+
+              <div className="border-l-4 border-[#8B1E1E] pl-6 py-4 bg-white/50">
+                <p className="font-serif italic text-lg leading-relaxed mb-2">
+                  "[Testimonial quote]"
+                </p>
+                <p className="font-mono text-sm uppercase tracking-wider text-[#2D241E]/60">— [Artist Name]</p>
+              </div>
+            </div>
+
+            {/* Example 3 Placeholder */}
+            <div className="bg-[#F9F5EB] p-8 md:p-12 border-2 border-[#2D241E] shadow-lg opacity-50">
+              <h3 className="text-2xl font-serif font-bold mb-2">[Artist Name] - [Track Title]</h3>
+              <p className="text-sm font-mono mb-6 text-[#2D241E]/60">
+                [One-sentence story about problem solved]
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-6 mb-8">
+                <AudioPlayer label="The Voice Memo / Home Demo" isDemo={true} playerId="artist3-demo" currentlyPlaying={currentlyPlaying} onPlay={setCurrentlyPlaying} />
+                <AudioPlayer label="The Produced Record" isDemo={false} playerId="artist3-final" currentlyPlaying={currentlyPlaying} onPlay={setCurrentlyPlaying} />
+              </div>
+
+              <div className="border-l-4 border-[#8B1E1E] pl-6 py-4 bg-white/50">
+                <p className="font-serif italic text-lg leading-relaxed mb-2">
+                  "[Testimonial quote]"
+                </p>
+                <p className="font-mono text-sm uppercase tracking-wider text-[#2D241E]/60">— [Artist Name]</p>
+              </div>
+            </div>
+          </div>
+        </FadeIn>
+      </Section>
+
+      {/* Process Section - Zig Zag Layout */}
+      <Section className="bg-[#F9F5EB]">
+        <div className="text-center mb-20">
+          <h2 className="text-4xl md:text-6xl font-serif font-bold text-[#2D241E] mb-4">How We'll Work Together</h2>
+        </div>
+
+        {/* Phase 1 - Image Left, Text Right */}
+        <FadeIn>
+          <div className="grid md:grid-cols-2 gap-12 items-center mb-32">
+            <div className="order-2 md:order-1">
+              <div className="aspect-square bg-[#2D241E]/10 border-2 border-[#2D241E]/20 flex items-center justify-center">
+                <span className="text-[#2D241E]/40 font-mono text-sm">Listening / Taking Notes</span>
+              </div>
+            </div>
+            <div className="order-1 md:order-2">
+              <h3 className="text-3xl md:text-4xl font-serif font-bold mb-4">Phase 1: Vision & Pre-Production</h3>
+              <p className="font-serif italic text-xl mb-6 text-[#8B1E1E]">Focus: Honoring the song before we hit record.</p>
+              <p className="font-serif text-lg leading-relaxed">
+                Every project starts with a deep dive into your influences, references, and demos. We'll look at the arrangement and structure together to ensure the production <strong>fully supports your songwriting and vision.</strong> This phase is about making sure the foundation is rock-solid, allowing us to be more creative and experimental once we move into the full production.
+              </p>
+            </div>
+          </div>
+        </FadeIn>
+
+        {/* Phase 2 - Text Left, Image Right */}
+        <FadeIn delay={100}>
+          <div className="grid md:grid-cols-2 gap-12 items-center mb-32">
+            <div>
+              <h3 className="text-3xl md:text-4xl font-serif font-bold mb-4">Phase 2: Performance & Production</h3>
+              <p className="font-serif italic text-xl mb-6 text-[#8B1E1E]">Focus: Building the sonic world, whether in-person or remote.</p>
+              <p className="font-serif text-lg leading-relaxed mb-4">
+                This is where your songs develop their character. We'll thoughtfully layer instruments and textures that complement your sound, using my network of world-class session musicians to capture authentic, human performances.
+              </p>
+              <p className="font-serif text-lg leading-relaxed">
+                Whether we're tracking live in the studio or working entirely remotely, I'll guide you through the process in real-time via video call so it feels like we're in the same room. I maintain a comfortable, creative environment where your best performances can emerge naturally, with regular opportunities for feedback as the tracks evolve.
+              </p>
+            </div>
+            <div>
+              <div className="aspect-square bg-[#2D241E]/10 border-2 border-[#2D241E]/20 flex items-center justify-center">
+                <span className="text-[#2D241E]/40 font-mono text-sm">Working with Artist</span>
+              </div>
+            </div>
+          </div>
+        </FadeIn>
+
+        {/* Phase 3 - Image Left, Text Right */}
+        <FadeIn delay={200}>
+          <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
+            <div className="order-2 md:order-1">
+              <div className="aspect-square bg-[#2D241E]/10 border-2 border-[#2D241E]/20 flex items-center justify-center">
+                <span className="text-[#2D241E]/40 font-mono text-sm">Mixing Close-up</span>
+              </div>
+            </div>
+            <div className="order-1 md:order-2">
+              <h3 className="text-3xl md:text-4xl font-serif font-bold mb-4">Phase 3: Mixing and Delivery</h3>
+              <p className="font-serif italic text-xl mb-6 text-[#8B1E1E]">Focus: Refinement and getting your music ready for the world.</p>
+              <p className="font-serif text-lg leading-relaxed mb-4">
+                Once we've captured the performances, I move into the mix—carving out space for every element to maximize clarity and impact while staying aligned with our original vision. We'll refine the details through revision rounds until we're both confident the song is ready for release.
+              </p>
+              <p className="font-serif text-lg leading-relaxed">
+                You'll receive industry-standard masters optimized for all platforms, along with all the files (stems) you need for future performances or remixes. More importantly, you'll have a record that authentically represents you as an artist.
+              </p>
+            </div>
+          </div>
+        </FadeIn>
+
+        {/* Closing Note */}
+        <FadeIn delay={300}>
+          <div className="max-w-3xl mx-auto text-center">
+            <p className="font-serif italic text-xl text-[#2D241E]/80 mb-8">
+              Every project is unique. Whether you're creating your first release or adding to an established catalog, I adapt this framework to suit your specific needs - keeping your artistic voice at the center of everything we create.
+            </p>
+            <div className="bg-[#D69E2E]/20 px-6 py-4 border-2 border-[#D69E2E]">
+              <p className="font-mono text-sm">
+                <strong>🌏 Working Together, Anywhere</strong> I'm based in Sydney, Australia, but I work with artists globally. We use high-res audio streaming so you can hear what I hear in real-time, making remote collaboration feel seamless.
+              </p>
+            </div>
+          </div>
+        </FadeIn>
+      </Section>
+
+      {/* Testimonials Section */}
+      <Section className="bg-[#2D241E] text-[#F9F5EB]">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-6xl font-serif font-bold text-[#D69E2E] mb-4">What Artists Say</h2>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[
+            {
+              quote: "Pete has a super creative ear and truly helped me bring my vision to life.",
+              author: "Annie Hamilton"
+            },
+            {
+              quote: "[Testimonial from Em George]",
+              author: "Em George"
+            },
+            {
+              quote: "[Additional testimonial]",
+              author: "[Artist Name]"
+            }
+          ].map((testimonial, i) => (
+            <FadeIn key={i} delay={i * 100}>
+              <div className="bg-[#F9F5EB] text-[#2D241E] p-6 border-2 border-[#D69E2E] h-full">
+                <p className="font-serif italic text-lg mb-4 leading-relaxed">"{testimonial.quote}"</p>
+                <p className="font-mono text-sm uppercase tracking-wider text-[#8B1E1E]">— {testimonial.author}</p>
+              </div>
+            </FadeIn>
+          ))}
+        </div>
+      </Section>
+
+      {/* Listen Section - Spotify Embed */}
+      <Section className="bg-[#F5F0E1]">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl md:text-5xl font-serif font-bold text-[#2D241E] mb-4">Want to Hear More?</h2>
+          <p className="font-serif text-xl text-[#2D241E]/60">Check out my selected discography.</p>
+        </div>
+
+        <FadeIn>
+          <div className="max-w-4xl mx-auto">
+            <div className="aspect-video w-full bg-[#2D241E]/10 border-2 border-[#2D241E]/20 flex items-center justify-center">
+              <div className="text-center">
+                <Music size={64} className="mx-auto mb-4 text-[#2D241E]/40" />
+                <span className="text-[#2D241E]/40 font-mono text-sm">Spotify Embed Placeholder</span>
+              </div>
+            </div>
+          </div>
+        </FadeIn>
+      </Section>
+
+      {/* CTA Section */}
+      <section id="contact" className="py-32 px-6 bg-[#F9F5EB] text-center relative overflow-hidden">
+         <div className="absolute inset-0 z-0 opacity-10" style={{ backgroundImage: `radial-gradient(#D69E2E 1px, transparent 1px)`, backgroundSize: '30px 30px' }}></div>
+
+         <div className="relative z-10 max-w-3xl mx-auto">
+            <h2 className="text-5xl md:text-7xl font-serif font-black text-[#2D241E] mb-6">Ready to Start Your Project?</h2>
+
+            <p className="text-xl font-serif mb-12">I'm currently opening booking for <strong>Early 2025</strong>.</p>
+
+            <div className="flex flex-col items-center gap-4 mb-12">
+              <Button variant="primary" className="text-xl px-12 py-6">Book an Intro Call</Button>
+              <p className="font-mono text-sm text-[#2D241E]/60">or</p>
+              <Button variant="secondary" className="text-lg">Email Me About Your Project</Button>
+            </div>
+
+            <p className="font-mono text-xs opacity-60 uppercase tracking-widest">
+                I personally review every inquiry within 48 hours.
+            </p>
+         </div>
+      </section>
+
+      {/* Footer with Substack */}
+      <footer className="bg-[#2D241E] text-[#F9F5EB] py-16">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="border-t border-[#F9F5EB]/20 pt-8 pb-8 text-center">
+            <p className="font-serif text-lg mb-3">Not ready to record yet?</p>
+            <p className="font-mono text-sm mb-6 opacity-80">Join my newsletter for thoughts on the creative process.</p>
+            <Button variant="secondary" className="border-[#F9F5EB] text-[#F9F5EB] hover:bg-[#F9F5EB] hover:text-[#2D241E]">
+              Subscribe to Newsletter
+            </Button>
+          </div>
+          <div className="text-center pt-8 border-t border-[#F9F5EB]/20">
+            <p className="font-mono text-xs opacity-40 uppercase tracking-widest">&copy; {new Date().getFullYear()} Pete Covington</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
