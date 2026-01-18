@@ -396,7 +396,7 @@ export default function App() {
       </header>
 
       {/* Proof Section - Demo vs Production */}
-      <Section className="bg-[#F5F0E1]">
+      <Section className="bg-[#F9F5EB]">
         <div className="text-center mb-10 md:mb-16">
           <h2 className="text-3xl md:text-6xl font-serif font-bold text-[#2D241E] mb-2 md:mb-4">From Demo to Final Master</h2>
           <p className="font-serif text-base md:text-xl text-[#2D241E]/60">Hear how a rough idea transforms through the production process.</p>
@@ -457,7 +457,7 @@ export default function App() {
       </Section>
 
       {/* Process Section - Zig Zag Layout */}
-      <Section className="bg-[#F9F5EB]">
+      <Section className="bg-[#F5F0E1]">
         <div className="text-center mb-12 md:mb-20">
           <h2 className="text-3xl md:text-6xl font-serif font-bold text-[#2D241E] mb-4">How We'll Work Together</h2>
         </div>
@@ -562,7 +562,7 @@ export default function App() {
       </Section>
 
       {/* Listen Section - Spotify Embed */}
-      <Section className="bg-[#F5F0E1]">
+      <Section className="bg-[#F9F5EB]">
         <div className="text-center mb-8 md:mb-12">
           <h2 className="text-3xl md:text-5xl font-serif font-bold text-[#2D241E] mb-2 md:mb-4">Want to Hear More?</h2>
           <p className="font-serif text-base md:text-xl text-[#2D241E]/60">Check out my selected discography.</p>
@@ -587,7 +587,7 @@ export default function App() {
       </Section>
 
       {/* CTA Section */}
-      <section id="contact" className="py-20 md:py-32 px-6 bg-[#F9F5EB] text-center relative overflow-hidden">
+      <section id="contact" className="py-20 md:py-32 px-6 bg-[#F5F0E1] text-center relative overflow-hidden">
          <div className="absolute inset-0 z-0 opacity-10" style={{ backgroundImage: `radial-gradient(#D69E2E 1px, transparent 1px)`, backgroundSize: '30px 30px' }}></div>
 
          <div className="relative z-10 max-w-3xl mx-auto">
