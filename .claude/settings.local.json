@@ -3,7 +3,27 @@
     "allow": [
       "Bash(git init:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: Production landing page without VSL\n\nLanding page for Pete Covington''s music production services.\nFeatures demo-to-master audio comparisons, artist testimonials,\nand project inquiry form.\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: Production landing page without VSL\n\nLanding page for Pete Covington''s music production services.\nFeatures demo-to-master audio comparisons, artist testimonials,\nand project inquiry form.\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(gh repo create:*)",
+      "Bash(vercel --prod:*)",
+      "Bash(npm install:*)",
+      "Bash(vercel login)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(vercel domains --help:*)",
+      "Bash(vercel domains add:*)",
+      "Bash(vercel alias:*)",
+      "Bash(vercel domains:*)",
+      "Bash(dig:*)",
+      "Bash(curl:*)",
+      "Bash(vercel project:*)",
+      "Bash(echo:*)",
+      "Bash(for subdomain in mail smtp imap pop www)",
+      "Bash(do echo \"=== $subdomain.petecovington.com ===\")",
+      "Bash(done)",
+      "Bash(vercel ls:*)",
+      "Bash(vercel inspect:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }
