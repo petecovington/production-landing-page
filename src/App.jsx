@@ -77,12 +77,12 @@ const AudioPlayer = ({ label, isDemo = false, playerId, currentlyPlaying, onPlay
   };
 
   return (
-    <div className={`p-6 border-2 border-[#2D241E] ${isDemo ? 'bg-[#E5DCC5]' : 'bg-[#704214]'} transition-all`}>
+    <div className={`p-6 border-2 border-[#2D241E] ${isDemo ? 'bg-[#f7f3e7]' : 'bg-[#ffdf97]'} transition-all`}>
       <audio ref={audioRef} src={audioSrc} preload="metadata" loop />
-      <div className={`text-xs font-mono uppercase tracking-widest mb-3 ${isDemo ? 'opacity-60' : 'text-[#F9F5EB] opacity-80'}`}>{label}</div>
+      <div className={`text-xs font-mono uppercase tracking-widest mb-3 opacity-60`}>{label}</div>
       <button
         onClick={handlePlay}
-        className={`w-full py-3 font-mono uppercase font-bold tracking-widest border-2 ${isDemo ? 'border-[#2D241E] bg-transparent hover:bg-[#2D241E] hover:text-[#F9F5EB]' : 'border-[#F9F5EB] bg-transparent text-[#F9F5EB] hover:bg-[#F9F5EB] hover:text-[#704214]'} transition-colors flex items-center justify-center gap-2`}
+        className={`w-full py-3 font-mono uppercase font-bold tracking-widest border-2 border-[#2D241E] bg-transparent hover:bg-[#2D241E] hover:text-[#F9F5EB] transition-colors flex items-center justify-center gap-2`}
       >
         {isPlaying ? <><Pause size={16} /> Stop</> : <><Play size={16} /> Play</>}
       </button>
