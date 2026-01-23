@@ -52,21 +52,59 @@ const FadeIn = ({ children, delay = 0 }) => {
   );
 };
 
+// --- Audio Tracking Helper ---
+const trackAudioEvent = (eventName, metadata = {}) => {
+  // Fathom custom events: window.fathom.trackEvent(name, { _value: cents })
+  // We use the event name to encode the action and metadata
+  if (typeof window !== 'undefined' && window.fathom) {
+    // Format: "Audio: [Action] - [Artist] - [Track] - [Type]"
+    const eventLabel = `Audio: ${eventName} - ${metadata.artist || 'Unknown'} - ${metadata.track || 'Unknown'} - ${metadata.type || 'unknown'}`;
+    // _value is in cents, we'll use duration in seconds * 100 for duration events
+    const value = metadata.duration ? Math.round(metadata.duration * 100) : 0;
+    window.fathom.trackEvent(eventLabel, { _value: value });
+  }
+  // Also log to console in development for debugging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[Audio Track]', eventName, metadata);
+  }
+};
+
 // --- Audio Player Component ---
-const AudioPlayer = ({ label, isDemo = false, playerId, currentlyPlaying, onPlay, audioSrc }) => {
+const AudioPlayer = ({ label, isDemo = false, playerId, currentlyPlaying, onPlay, audioSrc, artist, track }) => {
   const audioRef = useRef(null);
+  const playStartTimeRef = useRef(null);
   const isPlaying = currentlyPlaying === playerId;
+  const playerType = isDemo ? 'demo' : 'production';
 
   // Control playback based on currentlyPlaying state
   useEffect(() => {
     if (!audioRef.current) return;
 
     if (isPlaying) {
+      // Track play start
+      playStartTimeRef.current = Date.now();
+      trackAudioEvent('Play', { artist, track, type: playerType });
       audioRef.current.play();
     } else {
+      // Track play duration when stopping
+      if (playStartTimeRef.current) {
+        const durationSeconds = (Date.now() - playStartTimeRef.current) / 1000;
+        trackAudioEvent('Stop', { artist, track, type: playerType, duration: durationSeconds });
+        playStartTimeRef.current = null;
+      }
       audioRef.current.pause();
     }
-  }, [isPlaying]);
+  }, [isPlaying, artist, track, playerType]);
+
+  // Cleanup: track duration if component unmounts while playing
+  useEffect(() => {
+    return () => {
+      if (playStartTimeRef.current) {
+        const durationSeconds = (Date.now() - playStartTimeRef.current) / 1000;
+        trackAudioEvent('Stop', { artist, track, type: playerType, duration: durationSeconds });
+      }
+    };
+  }, [artist, track, playerType]);
 
   const handlePlay = () => {
     if (isPlaying) {
@@ -415,8 +453,8 @@ export default function App() {
                     {example.description}
                   </p>
                   <div className="grid md:grid-cols-2 gap-6">
-                    <AudioPlayer label="The Demo" isDemo={true} playerId={`${example.id}-demo`} currentlyPlaying={currentlyPlaying} onPlay={setCurrentlyPlaying} audioSrc={example.demoAudio} />
-                    <AudioPlayer label="The Produced Record" isDemo={false} playerId={`${example.id}-final`} currentlyPlaying={currentlyPlaying} onPlay={setCurrentlyPlaying} audioSrc={example.finalAudio} />
+                    <AudioPlayer label="The Demo" isDemo={true} playerId={`${example.id}-demo`} currentlyPlaying={currentlyPlaying} onPlay={setCurrentlyPlaying} audioSrc={example.demoAudio} artist={example.name} track={example.track} />
+                    <AudioPlayer label="The Produced Record" isDemo={false} playerId={`${example.id}-final`} currentlyPlaying={currentlyPlaying} onPlay={setCurrentlyPlaying} audioSrc={example.finalAudio} artist={example.name} track={example.track} />
                   </div>
                 </div>
               );
