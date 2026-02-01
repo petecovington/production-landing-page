@@ -198,13 +198,12 @@ const ContactForm = ({ onCancel }) => {
 
         <div>
           <label htmlFor="musicLink" className="block font-mono text-sm uppercase tracking-wider mb-2 text-[#2D241E]">
-            Link to Your Music *
+            Link to Your Music
           </label>
           <input
             type="text"
             id="musicLink"
             name="musicLink"
-            required
             value={formData.musicLink}
             onChange={handleChange}
             placeholder="Streaming, rough demo or social media link."
