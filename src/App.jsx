@@ -475,10 +475,8 @@ export default function App() {
           <h2 className="text-3xl md:text-6xl font-serif font-bold text-[#2D241E] mb-2 md:mb-4">Artist Testimonial</h2>
         </div>
         <FadeIn>
-          <div className="flex justify-center overflow-hidden" style={{ height: '480px' }}>
-            <div style={{ transform: 'scale(0.48)', transformOrigin: 'top center' }}>
-              <div className="senja-embed" data-id="153f45d6-2554-47ef-a1e8-d99435d47571" data-mode="shadow" data-lazyload="false" style={{ display: 'block', width: '100%' }}></div>
-            </div>
+          <div className="max-w-2xl mx-auto">
+            <div className="senja-embed" data-id="153f45d6-2554-47ef-a1e8-d99435d47571" data-mode="shadow" data-lazyload="false" style={{ display: 'block', width: '100%' }}></div>
           </div>
         </FadeIn>
       </Section>
