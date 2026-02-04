@@ -6,6 +6,12 @@ export default {
   ],
   theme: {
     extend: {
+      colors: {
+        'paper': '#F2F0E9',        // Archival paper tone
+        'ink': '#050505',          // Velvety black
+        'correction': '#FF2400',   // Correction red - emphasis only
+        'file-tab': '#D4C9B5',     // Aged folder tab color
+      },
       fontFamily: {
         'sans': ['Triplicate', 'ui-sans-serif', 'system-ui'],
         'serif': ['Neue Haas Grotesk', 'ui-serif', 'Georgia'],
@@ -14,6 +20,10 @@ export default {
       animation: {
         'spin-slow': 'spin 8s linear infinite',
       },
+      borderWidth: {
+        '1': '1px',
+        '2': '2px',
+      }
     },
   },
   plugins: [],

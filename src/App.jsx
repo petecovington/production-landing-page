@@ -324,14 +324,21 @@ export default function App() {
     // setSelectedExamples([allArtistExamples[0], allArtistExamples[2], allArtistExamples[4]]); // Test combo B
   }, []);
 
-  // Load Senja widget script
+  // Load Senja widget scripts
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://widget.senja.io/widget/82b3bfc7-75b1-4612-822d-4a301e138c82/platform.js';
-    script.async = true;
-    document.body.appendChild(script);
+    const script1 = document.createElement('script');
+    script1.src = 'https://widget.senja.io/widget/82b3bfc7-75b1-4612-822d-4a301e138c82/platform.js';
+    script1.async = true;
+    document.body.appendChild(script1);
+
+    const script2 = document.createElement('script');
+    script2.src = 'https://widget.senja.io/widget/153f45d6-2554-47ef-a1e8-d99435d47571/platform.js';
+    script2.async = true;
+    document.body.appendChild(script2);
+
     return () => {
-      document.body.removeChild(script);
+      document.body.removeChild(script1);
+      document.body.removeChild(script2);
     };
   }, []);
 
@@ -462,10 +469,24 @@ export default function App() {
         </FadeIn>
       </Section>
 
-      {/* Process Section - Zig Zag Layout */}
-      <Section className="bg-[#F5F0E1]">
+      {/* Artist Testimonial Section */}
+      <Section className="bg-[#F5F0E1] !pb-2 md:!pb-5">
         <div className="text-center mb-12 md:mb-20">
-          <h2 className="text-3xl md:text-6xl font-serif font-bold text-[#2D241E] mb-4">How We'll Work Together</h2>
+          <h2 className="text-3xl md:text-6xl font-serif font-bold text-[#2D241E] mb-2 md:mb-4">Artist Testimonial</h2>
+        </div>
+        <FadeIn>
+          <div className="flex justify-center overflow-hidden" style={{ height: '480px' }}>
+            <div style={{ transform: 'scale(0.48)', transformOrigin: 'top center' }}>
+              <div className="senja-embed" data-id="153f45d6-2554-47ef-a1e8-d99435d47571" data-mode="shadow" data-lazyload="false" style={{ display: 'block', width: '100%' }}></div>
+            </div>
+          </div>
+        </FadeIn>
+      </Section>
+
+      {/* Process Section - Zig Zag Layout */}
+      <Section className="bg-[#F9F5EB]">
+        <div className="text-center mb-12 md:mb-20">
+          <h2 className="text-3xl md:text-6xl font-serif font-bold text-[#2D241E] mb-4">My Working Process</h2>
         </div>
 
         {/* Phase 1 - Image Left, Text Right */}
