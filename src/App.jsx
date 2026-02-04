@@ -470,7 +470,7 @@ export default function App() {
       </Section>
 
       {/* Artist Testimonial Section */}
-      <Section className="bg-[#F5F0E1] !pb-12 md:!pb-16">
+      <Section className="bg-[#F5F0E1] !pb-20 md:!pb-24">
         <div className="text-center mb-12 md:mb-20">
           <h2 className="text-3xl md:text-6xl font-serif font-bold text-[#2D241E] mb-2 md:mb-4">Artist Testimonial</h2>
         </div>
