@@ -615,7 +615,7 @@ export default function App() {
          <div className="absolute inset-0 z-0 opacity-10" style={{ backgroundImage: `radial-gradient(#D69E2E 1px, transparent 1px)`, backgroundSize: '30px 30px' }}></div>
 
          <div className="relative z-10 max-w-3xl mx-auto">
-            <h2 className="text-4xl md:text-7xl font-serif font-black text-[#2D241E] mb-3 md:mb-6">Ready to Start<br/>Your Project?</h2>
+            <h2 className="text-4xl md:text-7xl font-serif font-black text-[#2D241E] mb-8 md:mb-12">Ready to Start?</h2>
 
 
             {!showContactForm ? (
