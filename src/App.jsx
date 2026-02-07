@@ -163,7 +163,7 @@ const ContactForm = ({ onCancel }) => {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <p className="text-lg mb-8 text-[#2D241E]/80 text-center">Tell me a bit about your project, and let's see if we're a good fit.</p>
+      <p className="text-lg mb-8 text-[#2D241E]/80 text-center">Tell me a bit about your project. I'd love to hear what you're working on.</p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
