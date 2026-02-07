@@ -401,8 +401,7 @@ export default function App() {
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <Button variant="primary" onClick={() => { window.fathom?.trackEvent('Click: Book Intro Call'); window.open('https://calendly.com/petecovington/project-discovery-call', '_blank'); }}>Book an Intro Call</Button>
-              <Button variant="secondary" onClick={() => { window.fathom?.trackEvent('Click: Email Form'); scrollToContact(); setShowContactForm(true); }}>Email About Your Project</Button>
+              <Button variant="primary" onClick={() => { window.fathom?.trackEvent('Click: Email Form'); scrollToContact(); setShowContactForm(true); }}>Email About Your Project</Button>
             </div>
           </FadeIn>
         </div>
@@ -623,9 +622,7 @@ export default function App() {
             {!showContactForm ? (
               <>
                 <div className="flex flex-col items-center gap-4 mb-8 md:mb-12">
-                  <Button variant="primary" className="text-xl px-12 py-6" onClick={() => { window.fathom?.trackEvent('Click: Book Intro Call'); window.open('https://calendly.com/petecovington/project-discovery-call', '_blank'); }}>Book an Intro Call</Button>
-                  <p className="font-mono text-sm text-[#2D241E]/60">or</p>
-                  <Button variant="secondary" className="text-lg whitespace-nowrap" onClick={() => { window.fathom?.trackEvent('Click: Email Form'); setShowContactForm(true); }}>Email Me About Your Project</Button>
+                  <Button variant="primary" className="text-xl px-12 py-6" onClick={() => { window.fathom?.trackEvent('Click: Email Form'); setShowContactForm(true); }}>Email Me About Your Project</Button>
                 </div>
 
                 <p className="font-mono text-xs opacity-60 uppercase tracking-widest">
