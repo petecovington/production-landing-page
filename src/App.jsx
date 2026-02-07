@@ -617,7 +617,6 @@ export default function App() {
          <div className="relative z-10 max-w-3xl mx-auto">
             <h2 className="text-4xl md:text-7xl font-serif font-black text-[#2D241E] mb-3 md:mb-6">Ready to Start<br/>Your Project?</h2>
 
-            <p className="text-base md:text-xl font-serif mb-8 md:mb-12">I'm currently booking for <strong>March 2026</strong>.</p>
 
             {!showContactForm ? (
               <>
