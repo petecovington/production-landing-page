@@ -544,8 +544,6 @@ export default function App() {
         <div className="text-center mb-12 md:mb-20">
           <h2 className="text-3xl md:text-6xl font-serif font-bold text-[#2D241E] mb-4">My Working Process</h2>
           <p className="font-serif text-base md:text-xl text-[#2D241E]/60 mb-6">It all starts with a simple conversation about your music.</p>
-          <h3 className="text-2xl md:text-4xl font-serif font-bold mb-6">The best way to explore how we can bring your vision to life is with a simple, no-pressure chat to see if we're a good fit.</h3>
-          <Button variant="primary" onClick={() => { analytics.track('click', 'Tell me about your project - Process'); scrollToContact(); }}>Tell me about your project</Button>
         </div>
 
         {/* Phase 1 - Image Left, Text Right */}
@@ -632,6 +630,8 @@ export default function App() {
                 <strong>Working Together, Anywhere</strong> I'm based in Sydney, Australia, but I work with artists globally. We use high-res audio streaming so you can hear what I hear in real-time, making remote collaboration feel seamless.
               </p>
             </div>
+            <h3 className="text-2xl md:text-4xl font-serif font-bold mt-12 mb-6">The best way to explore how we can bring your vision to life is with a simple, no-pressure chat to see if we're a good fit.</h3>
+            <Button variant="primary" onClick={() => { analytics.track('click', 'Tell me about your project - Process'); scrollToContact(); }}>Tell me about your project</Button>
           </div>
         </FadeIn>
       </Section>
