@@ -123,7 +123,7 @@ const ContactForm = () => {
 
   const handleBlur = (e) => {
     if (e.target.value.trim()) {
-      analytics.track('form', `Filled ${e.target.name}`);
+      analytics.track('form', `Filled ${e.target.name}`, { value: e.target.value.trim() });
     }
   };
 

@@ -120,6 +120,23 @@ export default async function handler(req, res) {
   const audioEvents = e.filter(ev => ev.event_type === 'audio_play');
   const audioCounts = groupBy(audioEvents, 'event_name');
 
+  // Form entries - group filled fields by session
+  const formFilledEvents = e.filter(ev => ev.event_type === 'form' && ev.event_name?.startsWith('Filled'));
+  const formEntriesMap = {};
+  formFilledEvents.forEach(ev => {
+    const field = ev.event_name.replace('Filled ', '');
+    if (!formEntriesMap[ev.session_id]) {
+      formEntriesMap[ev.session_id] = { session_id: ev.session_id, at: ev.created_at, fields: {} };
+    }
+    formEntriesMap[ev.session_id].fields[field] = ev.metadata?.value || '';
+    // Keep latest timestamp
+    if (ev.created_at > formEntriesMap[ev.session_id].at) {
+      formEntriesMap[ev.session_id].at = ev.created_at;
+    }
+  });
+  const formEntries = Object.values(formEntriesMap)
+    .sort((a, b) => new Date(b.at) - new Date(a.at));
+
   return res.status(200).json({
     period_days: days,
     overview: {
@@ -140,6 +157,7 @@ export default async function handler(req, res) {
     sections: sectionEngagement,
     events: eventBreakdown.slice(0, 30),
     form_funnel: formFunnel,
+    form_entries: formEntries,
     audio_plays: topN(audioCounts),
     recent_sessions: recentSessions || [],
   });

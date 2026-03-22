@@ -134,7 +134,7 @@ export default function Dashboard() {
 
   if (!data) return null;
 
-  const { overview, referrers, utm_sources, countries, cities, browsers, os, devices, sections, events, form_funnel, audio_plays, recent_sessions } = data;
+  const { overview, referrers, utm_sources, countries, cities, browsers, os, devices, sections, events, form_funnel, form_entries, audio_plays, recent_sessions } = data;
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -272,6 +272,44 @@ export default function Dashboard() {
             }
           </div>
         </div>
+
+        {/* Form Entries */}
+        {form_entries?.length > 0 && (
+          <div className="bg-white border border-gray-200 rounded-lg p-5 mb-8">
+            <h3 className="text-sm font-mono uppercase tracking-wider text-gray-500 mb-4">
+              Form Entries <span className="text-gray-400 normal-case font-sans">({form_entries.length} incomplete or complete)</span>
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-400 border-b border-gray-100">
+                    <th className="pb-2 font-mono uppercase text-xs">Time</th>
+                    <th className="pb-2 font-mono uppercase text-xs">Name</th>
+                    <th className="pb-2 font-mono uppercase text-xs">Email</th>
+                    <th className="pb-2 font-mono uppercase text-xs">Music Link</th>
+                    <th className="pb-2 font-mono uppercase text-xs">Message</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {form_entries.map((entry, i) => (
+                    <tr key={i} className="border-b border-gray-50 align-top">
+                      <td className="py-2 text-gray-400 whitespace-nowrap pr-4">{formatDate(entry.at)}</td>
+                      <td className="py-2 pr-4">{entry.fields.name || <span className="text-gray-300">—</span>}</td>
+                      <td className="py-2 pr-4">{entry.fields.email || <span className="text-gray-300">—</span>}</td>
+                      <td className="py-2 pr-4 max-w-[160px] truncate">{entry.fields.musicLink || <span className="text-gray-300">—</span>}</td>
+                      <td className="py-2 text-gray-600 max-w-[240px]">
+                        {entry.fields.message
+                          ? <span title={entry.fields.message}>{entry.fields.message.length > 80 ? entry.fields.message.slice(0, 80) + '…' : entry.fields.message}</span>
+                          : <span className="text-gray-300">—</span>
+                        }
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Events Breakdown */}
         {events?.length > 0 && (
