@@ -621,7 +621,7 @@ export default function App() {
         {/* Closing Note */}
         <FadeIn delay={300}>
           <div className="max-w-3xl mx-auto text-center">
-            <p className="text-base md:text-xl text-[#2D241E]/80 mb-8">
+            <p className="font-serif text-base md:text-lg leading-relaxed text-[#2D241E] mb-8">
               Every project is unique. Whether you're creating your first release or adding to an established catalog, I adapt this framework to suit your specific needs - keeping your artistic voice at the center of everything we create.
             </p>
             <div className="bg-[#D69E2E]/20 px-6 py-4 border-2 border-[#D69E2E]">
