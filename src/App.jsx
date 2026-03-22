@@ -630,7 +630,7 @@ export default function App() {
                 <strong>Working Together, Anywhere</strong> I'm based in Sydney, Australia, but I work with artists globally. We use high-res audio streaming so you can hear what I hear in real-time, making remote collaboration feel seamless.
               </p>
             </div>
-            <h3 className="text-xl md:text-2xl font-serif font-bold mt-12 mb-10">The best way to explore how we can bring your vision to life is with a simple, no-pressure chat to see if we're a good fit.<span className="block mt-2">Let's talk about your vision.</span></h3>
+            <h3 className="text-xl md:text-2xl font-serif font-bold mt-12 mb-10">The best way to explore how we can bring your vision to life is with a simple, no-pressure chat to see if we're a good fit.</h3>
             <Button variant="primary" onClick={() => { analytics.track('click', 'Tell me about your project - Process'); scrollToContact(); }}>Tell me about your project</Button>
           </div>
         </FadeIn>
