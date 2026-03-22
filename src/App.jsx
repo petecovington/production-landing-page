@@ -611,8 +611,11 @@ export default function App() {
               <p className="font-serif text-base md:text-lg leading-relaxed mb-4">
                 Once we've captured the performances, I move into the mix - carving out space for every element to maximize clarity and impact while staying aligned with our original vision. We'll refine the details through revision rounds until we're both confident the song is ready for release.
               </p>
-              <p className="font-serif text-base md:text-lg leading-relaxed">
+              <p className="font-serif text-base md:text-lg leading-relaxed mb-4">
                 You'll receive industry-standard masters optimized for all platforms, along with all the files (stems) you need for future performances or remixes. More importantly, you'll have a record that authentically represents you as an artist.
+              </p>
+              <p className="font-serif text-base md:text-lg leading-relaxed text-[#2D241E]">
+                Every project is unique. Whether you're creating your first release or adding to an established catalog, I adapt this framework to suit your specific needs - keeping your artistic voice at the center of everything we create.
               </p>
             </div>
           </div>
@@ -621,9 +624,6 @@ export default function App() {
         {/* Closing Note */}
         <FadeIn delay={300}>
           <div className="max-w-3xl mx-auto text-center">
-            <p className="font-serif text-base md:text-lg leading-relaxed text-[#2D241E] mb-8">
-              Every project is unique. Whether you're creating your first release or adding to an established catalog, I adapt this framework to suit your specific needs - keeping your artistic voice at the center of everything we create.
-            </p>
             <div className="bg-[#D69E2E]/20 px-6 py-4 border-2 border-[#D69E2E]">
               <p className="font-mono text-sm">
                 <img src="/skateboard-icon.png" alt="" className="inline-block w-5 h-5 align-middle mr-2" />
