@@ -23,10 +23,32 @@ function parseUA(ua = '') {
   return { browser, os, device };
 }
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).end();
+function isPrivateIP(ip) {
+  return !ip
+    || ip === '::1'
+    || ip.startsWith('127.')
+    || ip.startsWith('10.')
+    || ip.startsWith('192.168.')
+    || ip.startsWith('172.16.')
+    || ip.startsWith('::ffff:127.');
+}
+
+async function geoLookup(ip) {
+  try {
+    const res = await fetch(
+      `http://ip-api.com/json/${ip}?fields=status,country,countryCode,regionName,city,lat,lon,isp`,
+      { signal: AbortSignal.timeout(3000) }
+    );
+    const data = await res.json();
+    if (data.status === 'success') return data;
+  } catch {
+    // Geo lookup failed — not critical
   }
+  return null;
+}
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
 
   res.setHeader('Access-Control-Allow-Origin', '*');
 
@@ -40,6 +62,14 @@ export default async function handler(req, res) {
   const ua = body.user_agent || req.headers['user-agent'] || '';
   const { browser, os, device } = parseUA(ua);
 
+  // Get real client IP from x-forwarded-for
+  const clientIP = (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+    || req.socket?.remoteAddress
+    || null;
+
+  // Geo lookup via ip-api.com (skip for private/local IPs)
+  const geo = !isPrivateIP(clientIP) ? await geoLookup(clientIP) : null;
+
   const session = {
     id: body.id,
     visitor_id: body.visitor_id,
@@ -47,9 +77,12 @@ export default async function handler(req, res) {
     utm_source: body.utm_source || null,
     utm_medium: body.utm_medium || null,
     utm_campaign: body.utm_campaign || null,
-    country: req.headers['x-vercel-ip-country'] || null,
-    city: req.headers['x-vercel-ip-city'] || null,
-    region: req.headers['x-vercel-ip-country-region'] || null,
+    country: geo?.country || req.headers['x-vercel-ip-country'] || null,
+    city: geo?.city || req.headers['x-vercel-ip-city'] || null,
+    region: geo?.regionName || req.headers['x-vercel-ip-country-region'] || null,
+    latitude: geo?.lat || null,
+    longitude: geo?.lon || null,
+    isp: geo?.isp || null,
     user_agent: ua,
     browser,
     os,
