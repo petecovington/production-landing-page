@@ -173,12 +173,12 @@ export default function Dashboard() {
 
         {/* Overview Stats */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <StatCard label="Sessions" value={overview.total_sessions.toLocaleString()} />
-          <StatCard label="Visitors" value={overview.unique_visitors.toLocaleString()} />
-          <StatCard label="Bounce Rate" value={`${overview.bounce_rate}%`} />
+          <StatCard label="Sessions" value={(overview.total_sessions ?? 0).toLocaleString()} />
+          <StatCard label="Unique Visitors" value={(overview.unique_visitors ?? 0).toLocaleString()} />
+          <StatCard label="Bounce Rate" value={`${overview.bounce_rate ?? 0}%`} />
           <StatCard label="Avg Duration" value={formatDuration(overview.avg_duration_seconds)} />
-          <StatCard label="Avg Scroll" value={`${overview.avg_scroll_depth || 0}%`} />
-          <StatCard label="Events" value={overview.total_events.toLocaleString()} />
+          <StatCard label="Avg Scroll" value={`${overview.avg_scroll_depth ?? 0}%`} />
+          <StatCard label="Events" value={(overview.total_events ?? 0).toLocaleString()} />
         </div>
 
         {/* Traffic & Geo */}
