@@ -98,7 +98,7 @@ const AudioPlayer = ({ label, isDemo = false, playerId, currentlyPlaying, onPlay
 };
 
 // --- Contact Form Component ---
-const ContactForm = ({ onCancel }) => {
+const ContactForm = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -107,12 +107,23 @@ const ContactForm = ({ onCancel }) => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const hasStartedRef = useRef(false);
 
   const handleChange = (e) => {
+    if (!hasStartedRef.current && e.target.value.length > 0) {
+      hasStartedRef.current = true;
+      window.fathom?.trackEvent('Form: Started');
+    }
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  const handleBlur = (e) => {
+    if (e.target.value.trim()) {
+      window.fathom?.trackEvent(`Form: Filled ${e.target.name}`);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -143,11 +154,13 @@ const ContactForm = ({ onCancel }) => {
   useEffect(() => {
     if (isSuccess) {
       const timer = setTimeout(() => {
-        onCancel();
+        setIsSuccess(false);
+        setFormData({ name: '', email: '', musicLink: '', message: '' });
+        hasStartedRef.current = false;
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [isSuccess, onCancel]);
+  }, [isSuccess]);
 
   if (isSuccess) {
     return (
@@ -177,6 +190,7 @@ const ContactForm = ({ onCancel }) => {
             required
             value={formData.name}
             onChange={handleChange}
+            onBlur={handleBlur}
             className="w-full px-4 py-3 border-2 border-[#2D241E] bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E1E] font-sans"
           />
         </div>
@@ -192,6 +206,7 @@ const ContactForm = ({ onCancel }) => {
             required
             value={formData.email}
             onChange={handleChange}
+            onBlur={handleBlur}
             className="w-full px-4 py-3 border-2 border-[#2D241E] bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E1E] font-sans"
           />
         </div>
@@ -206,6 +221,7 @@ const ContactForm = ({ onCancel }) => {
             name="musicLink"
             value={formData.musicLink}
             onChange={handleChange}
+            onBlur={handleBlur}
             placeholder="Streaming, rough demo or social media link."
             className="w-full px-4 py-3 border-2 border-[#2D241E] bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E1E] font-sans placeholder:text-[#2D241E]/40"
           />
@@ -221,6 +237,7 @@ const ContactForm = ({ onCancel }) => {
             rows="5"
             value={formData.message}
             onChange={handleChange}
+            onBlur={handleBlur}
             className="w-full px-4 py-3 border-2 border-[#2D241E] bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1E1E] font-sans resize-none"
           />
         </div>
@@ -228,9 +245,6 @@ const ContactForm = ({ onCancel }) => {
         <div className="flex gap-4">
           <Button type="submit" variant="primary" disabled={isSubmitting} className="flex-1">
             {isSubmitting ? 'Sending...' : 'Submit'}
-          </Button>
-          <Button type="button" variant="secondary" onClick={onCancel}>
-            Cancel
           </Button>
         </div>
       </form>
@@ -311,7 +325,6 @@ export default function App() {
   const [scrolled, setScrolled] = useState(false);
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
   const [selectedExamples, setSelectedExamples] = useState([]);
-  const [showContactForm, setShowContactForm] = useState(false);
 
   // Randomly select 3 examples on mount (or manually set for A/B testing)
   useEffect(() => {
@@ -336,9 +349,15 @@ export default function App() {
     script2.async = true;
     document.body.appendChild(script2);
 
+    const script3 = document.createElement('script');
+    script3.src = 'https://widget.senja.io/widget/735d83bd-f736-4e38-b43d-e5e010fb5e4a/platform.js';
+    script3.async = true;
+    document.body.appendChild(script3);
+
     return () => {
       document.body.removeChild(script1);
       document.body.removeChild(script2);
+      document.body.removeChild(script3);
     };
   }, []);
 
@@ -387,9 +406,13 @@ export default function App() {
             <h1 className="text-3xl md:text-6xl lg:text-7xl font-serif font-black text-[#2D241E] leading-[0.95] mb-4 md:mb-8 tracking-tight">
               Turn Your Demos into <br/><span className="text-[#8B1E1E]">Timeless Records</span>.
             </h1>
-            <p className="text-base md:text-xl font-serif text-[#2D241E]/60 max-w-2xl mb-12 leading-snug md:leading-relaxed md:ml-2">
+            <p className="text-base md:text-xl font-serif text-[#2D241E]/60 max-w-2xl mb-8 leading-snug md:leading-relaxed md:ml-2">
               Collaborative production for artists who want <br className="md:hidden"/>to capture their authentic sound without compromising on quality.
             </p>
+
+            <div className="w-full mb-8">
+              <div className="senja-embed" data-id="735d83bd-f736-4e38-b43d-e5e010fb5e4a" data-mode="shadow" data-lazyload="false" style={{ display: 'block', width: '100%' }}></div>
+            </div>
 
             {/* Studio Image */}
             <div className="w-full mb-8 overflow-hidden rounded-lg border-2 border-[#2D241E]/20">
@@ -401,7 +424,7 @@ export default function App() {
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <Button variant="primary" onClick={() => { window.fathom?.trackEvent('Click: Email Form'); scrollToContact(); setShowContactForm(true); }}>Email About Your Project</Button>
+              <Button variant="primary" onClick={() => { window.fathom?.trackEvent('Click: Email Form'); scrollToContact(); }}>Email About Your Project</Button>
             </div>
           </FadeIn>
         </div>
@@ -616,21 +639,7 @@ export default function App() {
 
          <div className="relative z-10 max-w-3xl mx-auto">
             <h2 className="text-3xl md:text-6xl font-serif font-black text-[#2D241E] mb-12 md:mb-16">Ready to Start?</h2>
-
-
-            {!showContactForm ? (
-              <>
-                <div className="flex flex-col items-center gap-4 mb-8 md:mb-12">
-                  <Button variant="primary" className="text-xl px-12 py-6" onClick={() => { window.fathom?.trackEvent('Click: Email Form'); setShowContactForm(true); }}>Email Me About Your Project</Button>
-                </div>
-
-                <p className="font-mono text-xs opacity-60 uppercase tracking-widest">
-                    You'll hear back from me within 24 hours.
-                </p>
-              </>
-            ) : (
-              <ContactForm onCancel={() => setShowContactForm(false)} />
-            )}
+            <ContactForm />
          </div>
       </section>
 
