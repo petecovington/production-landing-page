@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import * as analytics from './analytics.js';
 import { Play, Pause, Check, X, Music, Mic, Disc, Calendar, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // --- Utility Components ---
@@ -64,8 +65,8 @@ const AudioPlayer = ({ label, isDemo = false, playerId, currentlyPlaying, onPlay
 
     if (isPlaying) {
       // Track play event once per play session
-      if (!hasTrackedRef.current && typeof window !== 'undefined' && window.fathom) {
-        window.fathom.trackEvent(`Play: ${track}`);
+      if (!hasTrackedRef.current) {
+        analytics.track('audio_play', track);
         hasTrackedRef.current = true;
       }
       audioRef.current.play();
@@ -112,7 +113,7 @@ const ContactForm = () => {
   const handleChange = (e) => {
     if (!hasStartedRef.current && e.target.value.length > 0) {
       hasStartedRef.current = true;
-      window.fathom?.trackEvent('Form: Started');
+      analytics.track('form', 'Started');
     }
     setFormData({
       ...formData,
@@ -122,7 +123,7 @@ const ContactForm = () => {
 
   const handleBlur = (e) => {
     if (e.target.value.trim()) {
-      window.fathom?.trackEvent(`Form: Filled ${e.target.name}`);
+      analytics.track('form', `Filled ${e.target.name}`);
     }
   };
 
@@ -139,6 +140,7 @@ const ContactForm = () => {
 
       if (response.ok) {
         setIsSuccess(true);
+        analytics.track('form', 'Submitted');
         setFormData({ name: '', email: '', musicLink: '', message: '' });
       } else {
         throw new Error('Form submission failed');
@@ -325,6 +327,40 @@ export default function App() {
   const [scrolled, setScrolled] = useState(false);
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
   const [selectedExamples, setSelectedExamples] = useState([]);
+  const spotifyRef = useRef(null);
+
+  useEffect(() => {
+    analytics.init();
+  }, []);
+
+  useEffect(() => {
+    const sectionIds = ['hero', 'proof', 'artist-testimonial', 'process', 'reviews', 'listen', 'contact'];
+    const observers = [];
+    sectionIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const observer = new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting) {
+          analytics.trackSectionEnter(id);
+        } else {
+          analytics.trackSectionLeave(id);
+        }
+      }, { threshold: 0.2 });
+      observer.observe(el);
+      observers.push({ observer, el });
+    });
+    return () => observers.forEach(({ observer, el }) => observer.unobserve(el));
+  }, []);
+
+  useEffect(() => {
+    const handleBlur = () => {
+      if (spotifyRef.current && document.activeElement === spotifyRef.current) {
+        analytics.track('interaction', 'Spotify Play');
+      }
+    };
+    window.addEventListener('blur', handleBlur);
+    return () => window.removeEventListener('blur', handleBlur);
+  }, []);
 
   // Randomly select 3 examples on mount (or manually set for A/B testing)
   useEffect(() => {
@@ -398,7 +434,7 @@ export default function App() {
       </nav>
 
       {/* Hero Section */}
-      <header className="relative pt-32 pb-20 md:pt-48 md:pb-40 px-6 bg-[#F5F0E1]">
+      <header id="hero" className="relative pt-32 pb-20 md:pt-48 md:pb-40 px-6 bg-[#F5F0E1]">
          <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full bg-[#8B1E1E] opacity-10 blur-3xl"></div>
 
          <div className="max-w-5xl mx-auto relative z-10">
@@ -424,14 +460,14 @@ export default function App() {
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <Button variant="primary" onClick={() => { window.fathom?.trackEvent('Click: Email Form'); scrollToContact(); }}>Email About Your Project</Button>
+              <Button variant="primary" onClick={() => { analytics.track('click', 'Email Form - Hero'); scrollToContact(); }}>Email About Your Project</Button>
             </div>
           </FadeIn>
         </div>
       </header>
 
       {/* Proof Section - Demo vs Production */}
-      <Section className="bg-[#F9F5EB]">
+      <Section id="proof" className="bg-[#F9F5EB]">
         <div className="text-center mb-10 md:mb-16">
           <h2 className="text-3xl md:text-6xl font-serif font-bold text-[#2D241E] mb-2 md:mb-4">From Demo to Final Master</h2>
           <p className="font-serif text-base md:text-xl text-[#2D241E]/60">Hear how a rough idea transforms through the production process.</p>
@@ -492,19 +528,19 @@ export default function App() {
       </Section>
 
       {/* Artist Testimonial Section */}
-      <Section className="bg-[#F5F0E1] !pb-20 md:!pb-24">
+      <Section id="artist-testimonial" className="bg-[#F5F0E1] !pb-20 md:!pb-24">
         <div className="text-center mb-12 md:mb-20">
           <h2 className="text-3xl md:text-6xl font-serif font-bold text-[#2D241E] mb-2 md:mb-4">Artist Testimonial</h2>
         </div>
         <FadeIn>
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-2xl mx-auto" onClick={() => analytics.track('interaction', 'Testimonial Widget')}>
             <div className="senja-embed" data-id="153f45d6-2554-47ef-a1e8-d99435d47571" data-mode="shadow" data-lazyload="false" style={{ display: 'block', width: '100%' }}></div>
           </div>
         </FadeIn>
       </Section>
 
       {/* Process Section - Zig Zag Layout */}
-      <Section className="bg-[#F9F5EB]">
+      <Section id="process" className="bg-[#F9F5EB]">
         <div className="text-center mb-12 md:mb-20">
           <h2 className="text-3xl md:text-6xl font-serif font-bold text-[#2D241E] mb-4">My Working Process</h2>
         </div>
@@ -598,18 +634,18 @@ export default function App() {
       </Section>
 
       {/* Testimonials Section */}
-      <Section className="bg-[#2D241E] text-[#F9F5EB]">
+      <Section id="reviews" className="bg-[#2D241E] text-[#F9F5EB]">
         <div className="text-center mb-10 md:mb-16">
           <h2 className="text-3xl md:text-6xl font-serif font-bold text-[#D69E2E]">What Artists Say</h2>
         </div>
 
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-6xl mx-auto" onClick={() => analytics.track('interaction', 'Reviews Widget')}>
           <div className="senja-embed" data-id="82b3bfc7-75b1-4612-822d-4a301e138c82" data-mode="shadow" data-lazyload="false" style={{ display: 'block', width: '100%' }}></div>
         </div>
       </Section>
 
       {/* Listen Section - Spotify Embed */}
-      <Section className="bg-[#F9F5EB]">
+      <Section id="listen" className="bg-[#F9F5EB]">
         <div className="text-center mb-8 md:mb-12">
           <h2 className="text-3xl md:text-5xl font-serif font-bold text-[#2D241E] mb-2 md:mb-4">Want to Hear More?</h2>
           <p className="font-serif text-base md:text-xl text-[#2D241E]/60">Check out my selected discography.</p>
@@ -619,6 +655,7 @@ export default function App() {
           <div className="max-w-4xl mx-auto">
             <div className="w-full border-2 border-[#2D241E]/20 overflow-hidden rounded-lg">
               <iframe
+                ref={spotifyRef}
                 style={{ borderRadius: '12px' }}
                 src="https://open.spotify.com/embed/playlist/6WfTR6zdI7Z0mUzL2ycqiF?utm_source=generator"
                 width="100%"
@@ -649,7 +686,7 @@ export default function App() {
           <div className="border-t border-[#F9F5EB]/20 pt-8 pb-8 text-center">
             <p className="font-serif text-lg mb-3">Not ready to record yet?</p>
             <p className="font-mono text-sm mb-6 opacity-80 max-w-2xl mx-auto">Visit my Substack for a look inside my sessions, songwriting breakthroughs, <br/>and ideas to help your creative process.</p>
-            <button onClick={() => window.open('https://petecovington.substack.com/', '_blank')} className="px-6 py-3 font-mono text-sm uppercase tracking-wider border-2 border-[#F9F5EB] text-[#F9F5EB] hover:bg-[#F9F5EB] hover:text-[#2D241E] transition-all duration-300">
+            <button onClick={() => { analytics.track('click', 'Substack'); window.open('https://petecovington.substack.com/', '_blank'); }} className="px-6 py-3 font-mono text-sm uppercase tracking-wider border-2 border-[#F9F5EB] text-[#F9F5EB] hover:bg-[#F9F5EB] hover:text-[#2D241E] transition-all duration-300">
               Substack
             </button>
           </div>
