@@ -21,6 +21,9 @@ function getOrCreateId(key) {
 }
 
 export function init() {
+  // Don't track headless browsers or bots
+  if (navigator.webdriver) return;
+
   visitorId = getOrCreateId('analytics_vid');
   sessionId = crypto.randomUUID();
   sessionStartTime = Date.now();

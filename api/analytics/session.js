@@ -60,6 +60,11 @@ export default async function handler(req, res) {
   }
 
   const ua = body.user_agent || req.headers['user-agent'] || '';
+
+  // Block bots and headless browsers
+  const isBot = !ua || /HeadlessChrome|Headless|bot|crawl|spider|prerender|phantom|selenium|webdriver|Vercel|VercelBot/i.test(ua);
+  if (isBot) return res.status(200).json({ ok: true });
+
   const { browser, os, device } = parseUA(ua);
 
   // Get real client IP from x-forwarded-for
