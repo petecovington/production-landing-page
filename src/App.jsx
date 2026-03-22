@@ -615,7 +615,7 @@ export default function App() {
                 You'll receive industry-standard masters optimized for all platforms, along with all the files (stems) you need for future performances or remixes. More importantly, you'll have a record that authentically represents you as an artist.
               </p>
               <p className="font-serif text-base md:text-lg leading-relaxed text-[#2D241E]">
-                Every project is unique. Whether you're creating your first release or adding to an established catalog, I adapt this framework to suit your specific needs - keeping your artistic voice at the center of everything we create.
+                Every project is unique. I adapt this framework to suit your specific needs - keeping your artistic voice at the center of everything we create.
               </p>
             </div>
           </div>
