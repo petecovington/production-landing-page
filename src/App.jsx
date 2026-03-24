@@ -334,7 +334,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const sectionIds = ['hero', 'proof', 'artist-testimonial', 'process', 'reviews', 'listen', 'contact'];
+    const sectionIds = ['hero', 'proof', 'process', 'reviews', 'listen', 'contact'];
     const observers = [];
     sectionIds.forEach(id => {
       const el = document.getElementById(id);
@@ -527,20 +527,8 @@ export default function App() {
         </FadeIn>
       </Section>
 
-      {/* Artist Testimonial Section */}
-      <Section id="artist-testimonial" className="bg-[#F5F0E1] !pb-20 md:!pb-24">
-        <div className="text-center mb-12 md:mb-20">
-          <h2 className="text-3xl md:text-6xl font-serif font-bold text-[#2D241E] mb-2 md:mb-4">Artist Testimonial</h2>
-        </div>
-        <FadeIn>
-          <div className="max-w-2xl mx-auto" onClick={() => analytics.track('interaction', 'Testimonial Widget')}>
-            <div className="senja-embed" data-id="153f45d6-2554-47ef-a1e8-d99435d47571" data-mode="shadow" data-lazyload="false" style={{ display: 'block', width: '100%' }}></div>
-          </div>
-        </FadeIn>
-      </Section>
-
       {/* Process Section - Zig Zag Layout */}
-      <Section id="process" className="bg-[#F9F5EB]">
+      <Section id="process" className="bg-[#F5F0E1]">
         <div className="text-center mb-12 md:mb-20">
           <h2 className="text-3xl md:text-6xl font-serif font-bold text-[#2D241E] mb-4">My Working Process</h2>
           <p className="font-serif text-base md:text-xl text-[#2D241E]/60 mb-6">It all starts with a simple conversation about your music.</p>
