@@ -460,7 +460,7 @@ export default function App() {
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <Button variant="primary" onClick={() => { analytics.track('click', 'Email Form - Hero'); scrollToContact(); }}>Get in Touch</Button>
+              <Button variant="primary" onClick={() => { analytics.track('click', 'Email Form - Hero'); scrollToContact(); }}>Contact Pete</Button>
             </div>
           </FadeIn>
         </div>
