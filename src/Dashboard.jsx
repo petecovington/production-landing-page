@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import StablesDashboard from './StablesDashboard.jsx';
 
 const duration = seconds => {
   if (seconds == null) return 'Unknown';
@@ -19,10 +20,11 @@ function Table({ columns, rows }) {
 export default function Dashboard() {
   const [password, setPassword] = useState(() => sessionStorage.getItem('dash_pw') || '');
   const [input, setInput] = useState('');
+  const [site, setSite] = useState('production');
   const [days, setDays] = useState(30), [refresh, setRefresh] = useState(0);
   const [data, setData] = useState(null), [loading, setLoading] = useState(false), [error, setError] = useState('');
   useEffect(() => {
-    if (!password) return;
+    if (!password || site !== 'production') return;
     const controller = new AbortController();
     setLoading(true); setError(''); setData(null);
     fetch(`/api/analytics/data?days=${days}`, { headers: { 'x-dashboard-password': password }, signal: controller.signal })
@@ -34,11 +36,13 @@ export default function Dashboard() {
       .catch(e => { if (e.name !== 'AbortError') setError(e.message); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [password, days, refresh]);
+  }, [password, days, refresh, site]);
   if (!password) return <main className="min-h-screen bg-gray-50 flex items-center justify-center p-6"><form className="bg-white p-8 rounded border space-y-4" onSubmit={e => { e.preventDefault(); sessionStorage.setItem('dash_pw', input); setPassword(input); }}><h1 className="text-2xl">Analytics dashboard</h1><label className="block">Password<input type="password" required value={input} onChange={e => setInput(e.target.value)} className="block border p-2 mt-2" /></label><button className="bg-[#8B1E1E] text-white px-4 py-2 rounded">Sign in</button>{error && <p role="alert">{error}</p>}</form></main>;
   const o = data?.overview, f = data?.form_funnel;
   return <main className="min-h-screen bg-gray-50 text-gray-900"><div className="max-w-7xl mx-auto p-6 md:p-8">
-    <header className="flex flex-wrap justify-between items-center gap-4 mb-6"><div><h1 className="text-2xl font-bold">Analytics</h1><p className="text-gray-500">petecovington.com</p></div><div className="flex gap-3 items-center"><select aria-label="Reporting period" value={days} onChange={e => setDays(Number(e.target.value))} className="border rounded p-2">{[7, 30, 90].map(d => <option key={d} value={d}>Last {d} days</option>)}</select><button onClick={() => setRefresh(n => n + 1)} className="border rounded p-2">Refresh</button><button onClick={() => { sessionStorage.removeItem('dash_pw'); setPassword(''); setData(null); }} className="text-gray-500">Sign out</button></div></header>
+    <header className="flex flex-wrap justify-between items-center gap-4 mb-6"><div><h1 className="text-2xl font-bold">Analytics</h1><p className="text-gray-500">{site === 'stables' ? 'thestables.music' : 'petecovington.com'}</p></div><div className="flex gap-3 items-center"><select aria-label="Reporting period" value={days} onChange={e => setDays(Number(e.target.value))} className="border rounded p-2">{[7, 30, 90].map(d => <option key={d} value={d}>Last {d} days</option>)}</select><button onClick={() => setRefresh(n => n + 1)} className="border rounded p-2">Refresh</button><button onClick={() => { sessionStorage.removeItem('dash_pw'); setPassword(''); setData(null); }} className="text-gray-500">Sign out</button></div></header>
+    <nav aria-label="Website" className="flex gap-2 mb-6">{[['production', 'Production'], ['stables', 'The Stables']].map(([value, label]) => <button key={value} aria-pressed={site === value} onClick={() => setSite(value)} className={`px-4 py-2 rounded border ${site === value ? 'bg-[#8B1E1E] text-white border-[#8B1E1E]' : 'bg-white'}`}>{label}</button>)}</nav>
+    {site === 'stables' ? <StablesDashboard password={password} days={days} refresh={refresh} onUnauthorized={() => { sessionStorage.removeItem('dash_pw'); setPassword(''); }} /> : <>
     {loading && <p role="status">Loading report…</p>}{error && <p role="alert" className="p-4 bg-red-50 border border-red-200 mb-6">{error}</p>}
     {data && <>
       <p className="text-sm text-gray-600 mb-4">Visits starting {date(data.from)} – {date(data.to)} UTC. Updated {date(data.to)} UTC.</p>
@@ -63,6 +67,7 @@ export default function Dashboard() {
       <Panel title="Things visitors did"><Table columns={['Event', 'Count']} rows={data.events.map(e => [e.key, e.count])} /></Panel>
       <Panel title="Recent visits"><Table columns={['Started (UTC)', 'Country', 'Device', 'Active time', 'Bounce']} rows={data.recent_sessions.map(s => [date(s.started_at), s.country || 'Unknown', s.device_type || 'Unknown', duration(s.duration_seconds), s.is_bounce == null ? 'Unknown' : s.is_bounce ? 'Yes' : 'No'])} /></Panel>
       <p className="text-xs text-gray-500">Not counted: {data.diagnostics.invalid_events} unknown actions and {data.diagnostics.outside_cohort_events} actions with no matching visit in this period.</p>
+    </>}
     </>}
   </div></main>;
 }
