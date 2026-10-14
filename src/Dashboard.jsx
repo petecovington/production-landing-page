@@ -1,382 +1,69 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 
-function formatDuration(seconds) {
-  if (!seconds) return '0s';
-  if (seconds < 60) return `${seconds}s`;
-  return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+const duration = seconds => {
+  if (seconds == null) return 'Unknown';
+  const rounded = Math.round(seconds);
+  return `${Math.floor(rounded / 60)}m ${rounded % 60}s`;
+};
+const percent = value => value == null ? 'Unknown' : `${value}%`;
+const date = value => new Date(value).toLocaleString('en-AU', { timeZone: 'UTC', dateStyle: 'medium', timeStyle: 'short' });
+function Card({ label, children }) {
+  return <div className="bg-white border border-gray-200 rounded-lg p-5"><div className="text-xs uppercase font-mono text-gray-500 mb-2">{label}</div><div className="text-2xl font-bold">{children}</div></div>;
 }
-
-function formatDate(iso) {
-  return new Date(iso).toLocaleString('en-AU', { dateStyle: 'short', timeStyle: 'short' });
+function Panel({ title, children }) {
+  return <section className="bg-white border border-gray-200 rounded-lg p-5 mb-6"><h2 className="font-mono text-sm uppercase mb-4">{title}</h2>{children}</section>;
 }
-
-function StatCard({ label, value, sub }) {
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg p-5">
-      <div className="text-sm text-gray-500 uppercase tracking-wider font-mono mb-1">{label}</div>
-      <div className="text-3xl font-bold text-gray-900">{value}</div>
-      {sub && <div className="text-xs text-gray-400 mt-1">{sub}</div>}
-    </div>
-  );
+function Table({ columns, rows }) {
+  return <div className="overflow-x-auto"><table className="w-full text-sm text-left"><thead><tr>{columns.map(c => <th key={c} className="p-2 border-b font-medium text-gray-500">{c}</th>)}</tr></thead><tbody>{rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} className="p-2 border-b border-gray-100">{c}</td>)}</tr>)}</tbody></table>{!rows.length && <p className="text-gray-500 py-3">No measurements in this period.</p>}</div>;
 }
-
-function BarList({ title, items, maxCount }) {
-  if (!items?.length) return null;
-  const max = maxCount || items[0]?.count || 1;
-  return (
-    <div>
-      <h3 className="text-sm font-mono uppercase tracking-wider text-gray-500 mb-3">{title}</h3>
-      <div className="space-y-2">
-        {items.map((item, i) => (
-          <div key={i}>
-            <div className="flex justify-between text-sm mb-1">
-              <span className="text-gray-700 truncate max-w-[200px]">{item.key || 'Direct'}</span>
-              <span className="text-gray-500 font-mono ml-2">{item.count}</span>
-            </div>
-            <div className="h-1.5 bg-gray-100 rounded">
-              <div className="h-1.5 bg-[#8B1E1E] rounded" style={{ width: `${(item.count / max) * 100}%` }} />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function FunnelBar({ label, value, max }) {
-  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
-  return (
-    <div className="flex items-center gap-3">
-      <div className="w-32 text-sm text-gray-600 text-right">{label}</div>
-      <div className="flex-1 h-6 bg-gray-100 rounded relative">
-        <div className="h-6 bg-[#8B1E1E]/80 rounded" style={{ width: `${pct}%` }} />
-        <span className="absolute left-2 top-0.5 text-xs text-white font-mono">{value} ({pct}%)</span>
-      </div>
-    </div>
-  );
-}
-
 export default function Dashboard() {
   const [password, setPassword] = useState(() => sessionStorage.getItem('dash_pw') || '');
   const [input, setInput] = useState('');
-  const [authError, setAuthError] = useState(false);
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [days, setDays] = useState(30);
-  const [error, setError] = useState(null);
-
-  const fetchData = useCallback(async (pw, d) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/analytics/data?days=${d}`, {
-        headers: { 'x-dashboard-password': pw },
-      });
-      if (res.status === 401) {
-        setAuthError(true);
-        setPassword('');
-        sessionStorage.removeItem('dash_pw');
-        return;
-      }
-      if (!res.ok) throw new Error('Failed to fetch data');
-      const json = await res.json();
-      setData(json);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  const [days, setDays] = useState(30), [refresh, setRefresh] = useState(0);
+  const [data, setData] = useState(null), [loading, setLoading] = useState(false), [error, setError] = useState('');
   useEffect(() => {
-    if (password) fetchData(password, days);
-  }, [password, days, fetchData]);
-
-  const handleLogin = (e) => {
-    e.preventDefault();
-    sessionStorage.setItem('dash_pw', input);
-    setPassword(input);
-    setAuthError(false);
-  };
-
-  // Password gate
-  if (!password || authError) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white border border-gray-200 rounded-lg p-8 w-80">
-          <h1 className="text-xl font-bold text-gray-900 mb-6">Analytics Dashboard</h1>
-          {authError && <p className="text-red-600 text-sm mb-4">Incorrect password.</p>}
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input
-              type="password"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              placeholder="Password"
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#8B1E1E]"
-              autoFocus
-            />
-            <button type="submit" className="w-full py-2 bg-[#8B1E1E] text-white rounded font-medium hover:bg-[#681212]">
-              Enter
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading && !data) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-500">Loading...</div>;
-  }
-
-  if (error) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center text-red-600">{error}</div>;
-  }
-
-  if (!data) return null;
-
-  const { overview, referrers, utm_sources, countries, cities, browsers, os, devices, sections, events, form_funnel, form_entries, audio_plays, recent_sessions } = data;
-
-  return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold">Analytics</h1>
-            <p className="text-gray-500 text-sm">petecovington.com</p>
-          </div>
-          <div className="flex items-center gap-3">
-            {loading && <span className="text-sm text-gray-400">Refreshing...</span>}
-            <select
-              value={days}
-              onChange={e => setDays(Number(e.target.value))}
-              className="border border-gray-200 rounded px-3 py-1.5 text-sm bg-white"
-            >
-              <option value={7}>Last 7 days</option>
-              <option value={30}>Last 30 days</option>
-              <option value={90}>Last 90 days</option>
-            </select>
-            <button
-              onClick={() => fetchData(password, days)}
-              className="border border-gray-200 rounded px-3 py-1.5 text-sm bg-white hover:bg-gray-50"
-            >
-              Refresh
-            </button>
-            <button
-              onClick={() => { sessionStorage.removeItem('dash_pw'); setPassword(''); }}
-              className="text-sm text-gray-400 hover:text-gray-600"
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-
-        {/* Overview Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <StatCard label="Sessions" value={(overview.total_sessions ?? 0).toLocaleString()} />
-          <StatCard label="Unique Visitors" value={(overview.unique_visitors ?? 0).toLocaleString()} />
-          <StatCard label="Bounce Rate" value={`${overview.bounce_rate ?? 0}%`} />
-          <StatCard label="Avg Duration" value={formatDuration(overview.avg_duration_seconds)} />
-          <StatCard label="Avg Scroll" value={`${overview.avg_scroll_depth ?? 0}%`} />
-          <StatCard label="Events" value={(overview.total_events ?? 0).toLocaleString()} />
-        </div>
-
-        {/* Traffic & Geo */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white border border-gray-200 rounded-lg p-5">
-            <BarList title="Referrers" items={referrers} />
-          </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-5">
-            <BarList title="UTM Sources" items={utm_sources} />
-          </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-5">
-            <BarList title="Countries" items={countries} />
-          </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-5">
-            <BarList title="Cities" items={cities} />
-          </div>
-        </div>
-
-        {/* Devices */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white border border-gray-200 rounded-lg p-5">
-            <BarList title="Device Type" items={devices} />
-          </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-5">
-            <BarList title="Browsers" items={browsers} />
-          </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-5">
-            <BarList title="Operating System" items={os} />
-          </div>
-        </div>
-
-        {/* Section Engagement */}
-        {sections?.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-lg p-5 mb-8">
-            <h3 className="text-sm font-mono uppercase tracking-wider text-gray-500 mb-4">Section Engagement</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-400 border-b border-gray-100">
-                    <th className="pb-2 font-mono uppercase text-xs">Section</th>
-                    <th className="pb-2 font-mono uppercase text-xs">Views</th>
-                    <th className="pb-2 font-mono uppercase text-xs">Avg Time</th>
-                    <th className="pb-2 w-48"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sections.map((s, i) => (
-                    <tr key={i} className="border-b border-gray-50">
-                      <td className="py-2 font-medium">{s.section}</td>
-                      <td className="py-2 text-gray-500">{s.views}</td>
-                      <td className="py-2 text-gray-500">{formatDuration(s.avg_seconds)}</td>
-                      <td className="py-2">
-                        <div className="h-2 bg-gray-100 rounded">
-                          <div
-                            className="h-2 bg-[#8B1E1E]/70 rounded"
-                            style={{ width: `${Math.min((s.avg_seconds / (sections[0]?.avg_seconds || 1)) * 100, 100)}%` }}
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Form Funnel & Audio Plays */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white border border-gray-200 rounded-lg p-5">
-            <h3 className="text-sm font-mono uppercase tracking-wider text-gray-500 mb-4">Contact Form Funnel</h3>
-            <div className="space-y-3">
-              {[
-                ['Started', form_funnel.started],
-                ['Filled Name', form_funnel.filled_name],
-                ['Filled Email', form_funnel.filled_email],
-                ['Filled Music Link', form_funnel.filled_musicLink],
-                ['Filled Message', form_funnel.filled_message],
-                ['Submitted', form_funnel.submitted],
-              ].map(([label, value]) => (
-                <FunnelBar key={label} label={label} value={value} max={form_funnel.started || 1} />
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white border border-gray-200 rounded-lg p-5">
-            <h3 className="text-sm font-mono uppercase tracking-wider text-gray-500 mb-4">Audio Plays</h3>
-            {audio_plays?.length > 0
-              ? <BarList title="" items={audio_plays} />
-              : <p className="text-gray-400 text-sm">No plays recorded yet.</p>
-            }
-          </div>
-        </div>
-
-        {/* Form Entries */}
-        {form_entries?.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-lg p-5 mb-8">
-            <h3 className="text-sm font-mono uppercase tracking-wider text-gray-500 mb-4">
-              Form Entries <span className="text-gray-400 normal-case font-sans">({form_entries.length} incomplete or complete)</span>
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-400 border-b border-gray-100">
-                    <th className="pb-2 font-mono uppercase text-xs">Time</th>
-                    <th className="pb-2 font-mono uppercase text-xs">Name</th>
-                    <th className="pb-2 font-mono uppercase text-xs">Email</th>
-                    <th className="pb-2 font-mono uppercase text-xs">Music Link</th>
-                    <th className="pb-2 font-mono uppercase text-xs">Message</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {form_entries.map((entry, i) => (
-                    <tr key={i} className="border-b border-gray-50 align-top">
-                      <td className="py-2 text-gray-400 whitespace-nowrap pr-4">{formatDate(entry.at)}</td>
-                      <td className="py-2 pr-4">{entry.fields.name || <span className="text-gray-300">—</span>}</td>
-                      <td className="py-2 pr-4">{entry.fields.email || <span className="text-gray-300">—</span>}</td>
-                      <td className="py-2 pr-4 max-w-[160px] truncate">{entry.fields.musicLink || <span className="text-gray-300">—</span>}</td>
-                      <td className="py-2 text-gray-600 max-w-[240px]">
-                        {entry.fields.message
-                          ? <span title={entry.fields.message}>{entry.fields.message.length > 80 ? entry.fields.message.slice(0, 80) + '…' : entry.fields.message}</span>
-                          : <span className="text-gray-300">—</span>
-                        }
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Events Breakdown */}
-        {events?.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-lg p-5 mb-8">
-            <h3 className="text-sm font-mono uppercase tracking-wider text-gray-500 mb-4">All Events</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-400 border-b border-gray-100">
-                    <th className="pb-2 font-mono uppercase text-xs">Type</th>
-                    <th className="pb-2 font-mono uppercase text-xs">Name</th>
-                    <th className="pb-2 font-mono uppercase text-xs text-right">Count</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {events.map((ev, i) => (
-                    <tr key={i} className="border-b border-gray-50">
-                      <td className="py-1.5 text-gray-500 font-mono text-xs">{ev.type}</td>
-                      <td className="py-1.5">{ev.name || '—'}</td>
-                      <td className="py-1.5 text-right font-mono">{ev.count}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Recent Sessions */}
-        {recent_sessions?.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-lg p-5">
-            <h3 className="text-sm font-mono uppercase tracking-wider text-gray-500 mb-4">Recent Sessions</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-400 border-b border-gray-100">
-                    <th className="pb-2 font-mono uppercase text-xs">Time</th>
-                    <th className="pb-2 font-mono uppercase text-xs">Country</th>
-                    <th className="pb-2 font-mono uppercase text-xs">City</th>
-                    <th className="pb-2 font-mono uppercase text-xs">Referrer</th>
-                    <th className="pb-2 font-mono uppercase text-xs">Device</th>
-                    <th className="pb-2 font-mono uppercase text-xs">Duration</th>
-                    <th className="pb-2 font-mono uppercase text-xs">Bounce</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recent_sessions.map((s, i) => (
-                    <tr key={i} className="border-b border-gray-50">
-                      <td className="py-1.5 text-gray-500 whitespace-nowrap">{formatDate(s.started_at)}</td>
-                      <td className="py-1.5">{s.country || '—'}</td>
-                      <td className="py-1.5 text-gray-500">{s.city || '—'}</td>
-                      <td className="py-1.5 text-gray-500 max-w-[150px] truncate">{s.referrer || 'Direct'}</td>
-                      <td className="py-1.5 text-gray-500">{s.device_type || '—'}</td>
-                      <td className="py-1.5 font-mono">{formatDuration(s.duration_seconds)}</td>
-                      <td className="py-1.5">
-                        <span className={`text-xs px-1.5 py-0.5 rounded ${s.is_bounce ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'}`}>
-                          {s.is_bounce ? 'yes' : 'no'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    if (!password) return;
+    const controller = new AbortController();
+    setLoading(true); setError(''); setData(null);
+    fetch(`/api/analytics/data?days=${days}`, { headers: { 'x-dashboard-password': password }, signal: controller.signal })
+      .then(async response => {
+        if (response.status === 401) { sessionStorage.removeItem('dash_pw'); setPassword(''); throw new Error('Incorrect dashboard password.'); }
+        if (!response.ok) throw new Error('Report unavailable or incomplete. Retry to load verified totals.');
+        return response.json();
+      }).then(result => { if (!controller.signal.aborted) setData(result); })
+      .catch(e => { if (e.name !== 'AbortError') setError(e.message); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [password, days, refresh]);
+  if (!password) return <main className="min-h-screen bg-gray-50 flex items-center justify-center p-6"><form className="bg-white p-8 rounded border space-y-4" onSubmit={e => { e.preventDefault(); sessionStorage.setItem('dash_pw', input); setPassword(input); }}><h1 className="text-2xl">Analytics dashboard</h1><label className="block">Password<input type="password" required value={input} onChange={e => setInput(e.target.value)} className="block border p-2 mt-2" /></label><button className="bg-[#8B1E1E] text-white px-4 py-2 rounded">Sign in</button>{error && <p role="alert">{error}</p>}</form></main>;
+  const o = data?.overview, f = data?.form_funnel;
+  return <main className="min-h-screen bg-gray-50 text-gray-900"><div className="max-w-7xl mx-auto p-6 md:p-8">
+    <header className="flex flex-wrap justify-between items-center gap-4 mb-6"><div><h1 className="text-2xl font-bold">Analytics</h1><p className="text-gray-500">petecovington.com</p></div><div className="flex gap-3 items-center"><select aria-label="Reporting period" value={days} onChange={e => setDays(Number(e.target.value))} className="border rounded p-2">{[7, 30, 90].map(d => <option key={d} value={d}>Last {d} days</option>)}</select><button onClick={() => setRefresh(n => n + 1)} className="border rounded p-2">Refresh</button><button onClick={() => { sessionStorage.removeItem('dash_pw'); setPassword(''); setData(null); }} className="text-gray-500">Sign out</button></div></header>
+    {loading && <p role="status">Loading complete report…</p>}{error && <p role="alert" className="p-4 bg-red-50 border border-red-200 mb-6">{error}</p>}
+    {data && <>
+      <p className="text-sm text-gray-600 mb-4">Visits starting {date(data.from)} – {date(data.to)} UTC. Events through the same cutoff. Refreshed {date(data.to)} UTC.</p>
+      <div className="bg-amber-50 border border-amber-200 rounded p-4 mb-6 text-sm"><strong>Measurement coverage:</strong> {o.v2_visits} visits use the new measurement; {o.legacy_visits} are historical or unclassified. Foreground time, sections, audio and the ordered funnel below use new measurements only. Historical data has not been repaired. Visitor IDs represent browsers, not identified people.</div>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6"><Card label="Recorded visits">{o.total_sessions}</Card><Card label="Visitor IDs">{o.unique_visitors}</Card><Card label="Accepted enquiry visits">{f.accepted}</Card><Card label="Average foreground time">{duration(o.avg_duration_seconds)}</Card><Card label="Bounce · classified visits only">{percent(o.bounce_rate)}</Card><Card label="Average recorded scroll">{percent(o.avg_scroll_depth)}</Card></div>
+      <p className="text-sm text-gray-600 mb-6">Time coverage: {o.measured_visits}/{o.total_sessions} visits. Bounce unknown for {o.unknown_bounce_visits} visits. A bounce requires a recorded exit without interaction or 30 seconds of foreground time; visits without an exit or a positive engagement signal stay unknown. Closing a tab is best effort.</p>
+      <div className="grid md:grid-cols-3 gap-6">{[['Referrers', data.referrers], ['UTM sources', data.utm_sources], ['Devices', data.devices]].map(([title, rows]) => <Panel key={title} title={title}><Table columns={['Source / type', 'Visits']} rows={rows.map(r => [r.key, r.count])} /></Panel>)}</div>
+      <div className="grid md:grid-cols-2 gap-6">{[['Countries', data.countries], ['Browsers', data.browsers]].map(([title, rows]) => <Panel key={title} title={title}><Table columns={['Group', 'Visits']} rows={rows.map(r => [r.key, r.count])} /></Panel>)}</div>
+      <Panel title="Section engagement · new measurements"><p className="text-sm text-gray-500 mb-3">Distinct visits with recorded foreground visibility; times accumulate across revisits. Visibility means any part of the section is in view, not proof of reading.</p><Table columns={['Section', 'Visits', 'Average foreground time']} rows={data.sections.map(s => [s.section, s.visits, duration(s.avg_seconds)])} /></Panel>
+      <Panel title="Enquiry funnel · ordered visits"><Table columns={['Stage', 'Distinct visits', '% of starts']} rows={[[ 'Started', f.started ], ['Attempted after start', f.attempted], ['Accepted after matching attempt', f.accepted]].map(([label, n]) => [label, n, f.started ? `${Math.round(n / f.started * 100)}%` : '—'])} /><p className="text-sm text-gray-600 mt-3">{f.error} visits had an error; these can also succeed on retry. {f.attempts} attempts; {f.accepted_attempts} accepted attempts. Acceptance means Formspree returned success, not delivery or a qualified lead. {f.unmatched_accepted} acceptance events lacked a matching observed start/attempt.</p><details className="mt-4"><summary className="cursor-pointer">Field progress · independent, optional steps</summary><Table columns={['Field', 'Visits with progress']} rows={Object.entries(f.fields)} /><p className="text-sm text-gray-500 mt-2">Only field identifiers are measured. No names, addresses, music links or messages are displayed or collected by new analytics.</p></details></Panel>
+      <Panel title="Audio and example exposure · new measurements"><Table columns={['Track', 'Recording', 'Exposed visits', 'Playing visits', 'Play starts', 'Foreground playback']} rows={data.audio.map(a => [a.track, a.version, a.exposed_visits, a.playing_visits, a.play_events, duration(a.foreground_seconds)])} /><p className="text-sm text-gray-500 mt-3">Playback starts only when media reports playing. Time excludes pauses, buffering and background windows. Exposures count cards that entered view; random example selection is not an experiment. Playback is not proof that sound was audible.</p></Panel>
+      <Panel title="Hear more · Spotify · anonymous visits">
+        <Table columns={['Observed signal', 'Distinct visits']} rows={[
+          ['Player exposed', data.spotify.exposed_visits], ['Player ready · API', data.spotify.ready_visits],
+          ['API unavailable / no ready signal', data.spotify.unavailable_visits], ['Iframe focus · interaction proxy', data.spotify.focus_visits],
+          ['Playback started · API-reported', data.spotify.playback_started_visits],
+          ['Exposed then interacted', data.spotify.exposed_then_interacted_visits], ['Accepted enquiry after interaction', data.spotify.accepted_after_interaction_visits],
+        ]} />
+        <p className="text-sm text-gray-500 my-3">{data.spotify.interacted_visits} interacting visits from {data.spotify.interacted_visitor_ids} browser IDs. Playback starts require Spotify’s official API signal. Focus may be a click or keyboard navigation, not a confirmed play. Missing API signals mean unobserved, not zero actual listening. Enquiries after interaction show sequence, not causation. No Spotify account identity, track history or off-site listening is collected.</p>
+        <Table columns={['Anonymous visit', 'Started (UTC)', 'Device', 'Referral origin', 'Exposed', 'Focus', 'API start', 'Later accepted enquiry']} rows={data.spotify.recent_interactions.map(s => [s.visit, date(s.started_at), s.device, s.source, s.exposed ? 'Yes' : 'Unobserved', s.focused ? 'Yes' : 'Unobserved', s.playback_started ? 'Yes' : 'Unobserved', s.accepted_after ? 'Yes' : 'Unobserved'])} />
+      </Panel>
+      <Panel title="Interaction events · new measurements"><Table columns={['Event', 'Count']} rows={data.events.map(e => [e.key, e.count])} /><p className="text-sm text-gray-500 mt-3">Legacy Spotify Focus remains an interaction proxy, not a confirmed play.</p></Panel>
+      <Panel title="Historical events · separate, uncorrected"><p>{data.legacy.events} legacy events; {data.legacy.started_events} start events; {data.legacy.submitted_events} submission events.</p><p className="text-sm text-gray-500 mt-2">These are raw event counts, not an ordered visitor funnel. Old audio merges demo and produced recordings; old timing includes background time. Historical form contents are excluded from this report and remain in storage pending a separate retention decision.</p></Panel>
+      <Panel title="Recent visits · selected period"><Table columns={['Started (UTC)', 'Country', 'Device', 'Foreground time', 'Bounce']} rows={data.recent_sessions.map(s => [date(s.started_at), s.country || 'Unknown', s.device_type || 'Unknown', duration(s.duration_seconds), s.is_bounce == null ? 'Unknown' : s.is_bounce ? 'Yes' : 'No'])} /></Panel>
+      <p className="text-xs text-gray-500">Excluded from event summaries: {data.diagnostics.invalid_events} unsupported events, {data.diagnostics.outside_cohort_events} events outside the visit cohort. No partial report is shown when a database read fails.</p>
+    </>}
+  </div></main>;
 }

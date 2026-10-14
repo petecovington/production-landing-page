@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as analytics from './analytics.js';
+import { submitContact } from './submit-contact.js';
+import SpotifyEmbed from './SpotifyEmbed.jsx';
 import { Play, Pause, Check, X, Music, Mic, Disc, Calendar, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // --- Utility Components ---
@@ -56,25 +58,22 @@ const FadeIn = ({ children, delay = 0 }) => {
 // --- Audio Player Component ---
 const AudioPlayer = ({ label, isDemo = false, playerId, currentlyPlaying, onPlay, audioSrc, track }) => {
   const audioRef = useRef(null);
-  const hasTrackedRef = useRef(false);
   const isPlaying = currentlyPlaying === playerId;
 
   // Control playback based on currentlyPlaying state
   useEffect(() => {
     if (!audioRef.current) return;
 
+    let cancelled = false;
     if (isPlaying) {
-      // Track play event once per play session
-      if (!hasTrackedRef.current) {
-        analytics.track('audio_play', track);
-        hasTrackedRef.current = true;
-      }
-      audioRef.current.play();
+      audioRef.current.play().catch(() => { if (!cancelled) onPlay(null); });
     } else {
-      hasTrackedRef.current = false;
       audioRef.current.pause();
     }
-  }, [isPlaying, track]);
+    return () => { cancelled = true; };
+  }, [isPlaying, onPlay]);
+
+  useEffect(() => () => analytics.playback(track, isDemo ? 'demo' : 'produced', false), [track, isDemo]);
 
   const handlePlay = () => {
     if (isPlaying) {
@@ -86,7 +85,13 @@ const AudioPlayer = ({ label, isDemo = false, playerId, currentlyPlaying, onPlay
 
   return (
     <div className={`p-6 border-2 border-[#2D241E] ${isDemo ? 'bg-[#f7f3e7]' : 'bg-[#ffdf97]'} transition-all`}>
-      <audio ref={audioRef} src={audioSrc} preload="metadata" loop />
+      <audio ref={audioRef} src={audioSrc} preload="metadata" loop
+        onPlaying={() => analytics.playback(track, isDemo ? 'demo' : 'produced', true)}
+        onPause={() => analytics.playback(track, isDemo ? 'demo' : 'produced', false)}
+        onWaiting={() => analytics.playback(track, isDemo ? 'demo' : 'produced', false)}
+        onEnded={() => analytics.playback(track, isDemo ? 'demo' : 'produced', false)}
+        onError={() => { analytics.playback(track, isDemo ? 'demo' : 'produced', false); if (isPlaying) onPlay(null); }}
+      />
       <div className={`text-xs font-mono uppercase tracking-widest mb-3 opacity-60`}>{label}</div>
       <button
         onClick={handlePlay}
@@ -113,7 +118,7 @@ const ContactForm = () => {
   const handleChange = (e) => {
     if (!hasStartedRef.current && e.target.value.length > 0) {
       hasStartedRef.current = true;
-      analytics.track('form', 'Started');
+      analytics.trackOnce('form:started', 'form', 'Started');
     }
     setFormData({
       ...formData,
@@ -123,7 +128,7 @@ const ContactForm = () => {
 
   const handleBlur = (e) => {
     if (e.target.value.trim()) {
-      analytics.track('form', `Filled ${e.target.name}`, { value: e.target.value.trim() });
+      analytics.trackOnce(`form:progress:${e.target.name}`, 'form', 'Progress', { field: e.target.name });
     }
   };
 
@@ -131,26 +136,19 @@ const ContactForm = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    try {
-      const response = await fetch('https://formspree.io/f/mbdlpyno', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      if (response.ok) {
-        setIsSuccess(true);
-        analytics.track('form', 'Submitted');
-        setFormData({ name: '', email: '', musicLink: '', message: '' });
-      } else {
-        throw new Error('Form submission failed');
-      }
-    } catch (error) {
-      console.error('Form submission error:', error);
+    // Autofill can bypass change/blur: establish progress before this attempt.
+    analytics.trackOnce('form:started', 'form', 'Started');
+    Object.entries(formData).forEach(([field, value]) => {
+      if (value.trim()) analytics.trackOnce(`form:progress:${field}`, 'form', 'Progress', { field });
+    });
+    const accepted = await submitContact(formData, { track: analytics.track, attemptId: crypto.randomUUID() });
+    if (accepted) {
+      setIsSuccess(true);
+      setFormData({ name: '', email: '', musicLink: '', message: '' });
+    } else {
       alert('There was an error submitting the form. Please try again or email me directly.');
-    } finally {
-      setIsSubmitting(false);
     }
+    setIsSubmitting(false);
   };
 
   useEffect(() => {
@@ -160,6 +158,7 @@ const ContactForm = () => {
         setFormData({ name: '', email: '', musicLink: '', message: '' });
         hasStartedRef.current = false;
       }, 5000);
+
       return () => clearTimeout(timer);
     }
   }, [isSuccess]);
@@ -327,10 +326,9 @@ export default function App() {
   const [scrolled, setScrolled] = useState(false);
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
   const [selectedExamples, setSelectedExamples] = useState([]);
-  const spotifyRef = useRef(null);
 
   useEffect(() => {
-    analytics.init();
+    return analytics.init();
   }, []);
 
   useEffect(() => {
@@ -340,26 +338,16 @@ export default function App() {
       const el = document.getElementById(id);
       if (!el) return;
       const observer = new IntersectionObserver(([entry]) => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting && entry.intersectionRatio > 0) {
           analytics.trackSectionEnter(id);
         } else {
           analytics.trackSectionLeave(id);
         }
-      }, { threshold: 0.2 });
+      }, { threshold: 0 });
       observer.observe(el);
       observers.push({ observer, el });
     });
     return () => observers.forEach(({ observer, el }) => observer.unobserve(el));
-  }, []);
-
-  useEffect(() => {
-    const handleBlur = () => {
-      if (spotifyRef.current && document.activeElement === spotifyRef.current) {
-        analytics.track('interaction', 'Spotify Play');
-      }
-    };
-    window.addEventListener('blur', handleBlur);
-    return () => window.removeEventListener('blur', handleBlur);
   }, []);
 
   // Randomly select 3 examples on mount (or manually set for A/B testing)
@@ -372,6 +360,21 @@ export default function App() {
     // setSelectedExamples([allArtistExamples[0], allArtistExamples[1], allArtistExamples[2]]); // Test combo A
     // setSelectedExamples([allArtistExamples[0], allArtistExamples[2], allArtistExamples[4]]); // Test combo B
   }, []);
+
+  useEffect(() => {
+    const cards = Array.from(document.querySelectorAll('[data-example-track]'));
+    const visible = new Map();
+    const publish = () => visible.forEach((isVisible, card) => analytics.exampleExposure(card.dataset.exampleTrack, Number(card.dataset.examplePosition), isVisible));
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => visible.set(entry.target, entry.isIntersecting));
+      publish();
+    }, { threshold: 0 });
+    cards.forEach(card => observer.observe(card));
+    return () => {
+      observer.disconnect();
+      cards.forEach(card => analytics.exampleExposure(card.dataset.exampleTrack, Number(card.dataset.examplePosition), false));
+    };
+  }, [selectedExamples]);
 
   // Load Senja widget scripts
   useEffect(() => {
@@ -517,7 +520,7 @@ export default function App() {
               );
 
               return (
-                <div key={example.id} className="grid md:grid-cols-3 gap-8">
+                <div key={example.id} data-example-track={example.track} data-example-position={index + 1} className="grid md:grid-cols-3 gap-8">
                   <div className="md:col-span-2">{playersSection}</div>
                   <div className="md:col-span-1">{testimonialSection}</div>
                 </div>
@@ -645,17 +648,7 @@ export default function App() {
         <FadeIn>
           <div className="max-w-4xl mx-auto">
             <div className="w-full border-2 border-[#2D241E]/20 overflow-hidden rounded-lg">
-              <iframe
-                ref={spotifyRef}
-                style={{ borderRadius: '12px' }}
-                src="https://open.spotify.com/embed/playlist/6WfTR6zdI7Z0mUzL2ycqiF?utm_source=generator"
-                width="100%"
-                height="380"
-                frameBorder="0"
-                allowFullScreen=""
-                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                loading="lazy"
-              ></iframe>
+              <SpotifyEmbed />
             </div>
           </div>
         </FadeIn>
