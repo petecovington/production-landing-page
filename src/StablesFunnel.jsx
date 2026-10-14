@@ -15,10 +15,10 @@ export function DailyChart({ daily, posts }) {
   const visiblePosts = posts.filter(p => daily.some(d => d.date === dayKey(p.published_at)));
   const path = metric => daily.map((d,i) => d[metric] == null ? '' : `${i && daily[i-1][metric] != null ? 'L' : 'M'}${x(i)},${y(d[metric])}`).join(' ');
   return <section className={panel}>
-    <h2 className="font-bold text-lg">Daily visits and accepted signups</h2>
+    <h2 className="font-bold text-lg">Daily visits and signups</h2>
     <p className="text-sm text-gray-600 mt-1">Sydney time</p>
     <div className="flex gap-5 text-sm mt-4"><span className="text-blue-700">● Visits</span><span className="text-emerald-700">● Signups</span><span className="text-gray-500">┊ Post published</span></div>
-    <div className="overflow-x-auto"><svg viewBox={`0 0 ${width} ${height}`} className="w-full min-w-[560px]" role="img" aria-label="Daily visits, accepted signups and post dates">
+    <div className="overflow-x-auto"><svg viewBox={`0 0 ${width} ${height}`} className="w-full min-w-[560px]" role="img" aria-label="Daily visits, signups and post dates">
       {[0,1,2,3,4].map(i => <g key={i}><line x1={left} x2={width-20} y1={y(ceiling*i/4)} y2={y(ceiling*i/4)} stroke="#e5e7eb"/><text x={left-8} y={y(ceiling*i/4)+4} textAnchor="end" fontSize="11" fill="#6b7280">{ceiling*i/4}</text></g>)}
       {visiblePosts.map((p,i) => { const at = daily.findIndex(d => d.date === dayKey(p.published_at)); return <g key={p.id}><title>{p.title} · {date(p.published_at)}</title><line x1={x(at)} x2={x(at)} y1={top} y2={bottom} stroke="#9ca3af" strokeDasharray="4 4"/><text x={x(at)} y={14+(i%2)*10} textAnchor="middle" fontSize="11">{i+1}</text></g>; })}
       {[['visits','#1d4ed8'],['signups','#047857']].map(([metric,color]) => <g key={metric}><path d={path(metric)} stroke={color} strokeWidth="2" fill="none"/>{daily.map((d,i) => d[metric] != null && <circle key={d.date} cx={x(i)} cy={y(d[metric])} r={d.partial ? 4 : 2.5} fill={d.partial ? '#fff' : color} stroke={color}><title>{shortDate(d.date)}: {d[metric]} {metric}{d.partial ? ' · Partial day' : ''}</title></circle>)}</g>)}

@@ -21,7 +21,7 @@ export default function StablesDashboard({ password, days, refresh, onUnauthoriz
     {loading && <p role="status">Loading Stables…</p>}
     {error && <p role="alert" className="p-4 bg-red-50 border border-red-200 mb-6">{error}</p>}
     {data && <>
-      <div className="grid md:grid-cols-3 gap-4 mb-4"><Card title="Visits">{data.visits}</Card><Card title="Visits with accepted signups">{data.submitted_visits}</Card><Card title="Signup rate">{percentage(data.submission_rate)}</Card></div>
+      <div className="grid md:grid-cols-3 gap-4 mb-4"><Card title="Visits">{data.visits}</Card><Card title="Visits with signups">{data.submitted_visits}</Card><Card title="Signup rate">{percentage(data.submission_rate)}</Card></div>
 
       <section className="bg-white border rounded-lg p-5 mb-6"><h2 className="font-mono text-sm uppercase mb-4">Signup pages</h2><table className="w-full text-left text-sm"><thead><tr>{['Page', 'Visits', 'Signup visits'].map(x => <th className="p-2 border-b" key={x}>{x}</th>)}</tr></thead><tbody>{data.forms.map(f => <tr key={f.name}><td className="p-2">{f.name}</td><td className="p-2">{f.visits}</td><td className="p-2">{f.submissions}</td></tr>)}</tbody></table></section>
       <section className="bg-white border rounded-lg p-5 mb-6"><h2 className="font-mono text-sm uppercase mb-4">Pages visited</h2>{data.pages.map(p => <div className="flex justify-between py-2 border-b text-sm" key={p.page}><span>{p.page === '/' ? 'Home' : p.page.slice(1).replace('.html', '').replaceAll('-', ' ')}</span><span>{p.visits}</span></div>)}</section>
