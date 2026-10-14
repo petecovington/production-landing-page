@@ -5,7 +5,7 @@ The dashboard adds a separate **The Stables** tab. Production analytics use thei
 ## Counts
 
 - Visits: anonymous per-tab visits, reused between page loads for up to 30 minutes of inactivity. No persistent person identifier, IP, email, query strings or full referring URL is stored.
-- Email submissions: visits with a recent form attempt and its matching return token from Kit. Form 9485257 is PDF breakdowns; 9486070 is Workshops. Refreshing, direct confirmation-page visits, wrong tokens and expired attempts do not count. One visit counts once in the total, even if both forms are submitted.
+- Email submissions: visits with an explicit successful JSON response from Kit, matched to a recent anonymous attempt. Form 9485257 is PDF breakdowns; 9486070 is Workshops. Direct confirmation-page visits and refreshes never count. One visit counts once in the total, even if both forms are submitted.
 - Submission rate: submitting visits divided by all tracked Stables visits in the selected start-date period.
 - Confirmed subscribers: current active membership of PDF form 9485257 in Kit, all time, unique subscriber IDs. This includes already-confirmed subscribers and is separate from recent submissions. It is not a count of new confirmation clicks or an attributed funnel stage. Cancelled/bounced subscribers are excluded by Kit's active filter.
 
@@ -13,10 +13,12 @@ The dashboard adds a separate **The Stables** tab. Production analytics use thei
 
 1. Apply `migrations/stables.sql` to the existing analytics Supabase project. This creates only `public.stables_visits` and `public.stables_events`, their indexes and constraints; enables RLS with no public access; allows the existing service role to insert and read. No old table, row or function is altered.
 2. Publish the scoped production-landing-page files: Stables endpoints, report/Kit modules, Dashboard and StablesDashboard, plus optional tests/review setup docs. Keep unrelated Viewerly/local edits out of the publish commit.
-3. Publish the Stables `analytics.js` and six HTML script inclusions. Existing form actions and email inputs are unchanged. Script sets a same-origin thank-you URL with a random return token only during a valid native form submission.
-4. Verify Kit preserves the `redirect_to` return token and returns to the same hostname. **This has only been simulated, not tested with a real signup.** Pete approved a test signup to hello@petecovington.com. Start it with `?analytics=test`; this retains test measurements in the Stables tables and excludes the whole test visit from ordinary dashboard counts. `?analytics=on` starts a separate ordinary visit. If Kit ignores the token, submissions safely remain uncounted. Do not claim production signup tracking is verified until this check passes.
+3. Publish Stables `analytics.js`, `signup.js`, and the HTML script inclusions. Email delivery uses Kit's existing public form endpoint and its JSON response contract, as used by Kit's published form client. Only HTTP success plus `status: success` permits counting; failures and verification steps do not. The native form remains available as a fallback. Form field values are used only for delivery directly to Kit; analytics never reads or receives them.
+4. Pete approved the test signup to hello@petecovington.com. Test visits started with `?analytics=test` are retained but excluded from ordinary totals; `?analytics=on` starts a separate ordinary visit.
 
-The browser return is evidence of Kit's success redirect, not a signed server-to-server acceptance receipt. It can undercount when JavaScript/storage/network/redirect are blocked. No email or Kit subscriber identifier is needed for this measurement.
+Live testing found Kit drops the native `redirect_to` token. The implementation now uses explicit Kit acceptance instead. Confirmation-page visits are page views only. The test confirmation email reached hello@petecovington.com and its link opened `/the-archive.html`.
+
+These measurements rely on browser JavaScript and network access. Native fallback submissions remain uncounted. Current Kit subscriber totals remain separate and include existing subscribers; no browser-to-subscriber matching is claimed.
 
 ## Kit setup — secure user handoff required
 

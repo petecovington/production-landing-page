@@ -10,32 +10,27 @@ const res = () => ({ code: 0, status(n) { this.code=n;return this; }, json(body)
 const settle = () => new Promise(resolve => setImmediate(resolve));
 let counter = 1;
 function browser(path, storage=new Map(), requestOK=true) {
-  const requests=[], listeners={}, redirect={ value: 'unchanged' };
-  const win={ location:new URL('https://www.thestables.music'+path), navigator:{webdriver:false}, crypto:{randomUUID:()=>id(counter++)}, sessionStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)}, history:{replaceState:(_,__,path)=>{win.location=new URL(path,win.location.origin);}}, setTimeout:()=>{} };
-  const form={querySelector:()=>redirect,addEventListener:(name,fn)=>{listeners[name]=fn;}};
-  startTracking(win,{querySelector:()=>form},async(url,options)=>{requests.push({url,...JSON.parse(options.body)});return {ok:requestOK};});
-  return {win,requests,redirect,submit:()=>listeners.submit(),storage};
+  const requests=[];
+  const win={ location:new URL('https://www.thestables.music'+path), navigator:{webdriver:false}, crypto:{randomUUID:()=>id(counter++)}, sessionStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)} };
+  const tracking = startTracking(win,{},async(url,options)=>{requests.push({url,...JSON.parse(options.body)});return {ok:requestOK};});
+  return {win,requests,tracking,storage};
 }
-test('direct, wrong-receipt and expired confirmation visits never count',()=>{
-  assert.equal(browser('/confirmation.html').requests.some(e=>e.kind==='submission'),false);
-  const b=browser('/breakdowns.html');b.submit();
-  assert.equal(browser('/confirmation.html?stables_receipt=wrong',b.storage).requests.some(e=>e.kind==='submission'),false);
-  const p=JSON.parse(b.storage.get('stables_pending'));p.at-=31*60000;b.storage.set('stables_pending',JSON.stringify(p));
-  assert.equal(browser('/confirmation.html?stables_receipt='+p.id,b.storage).requests.some(e=>e.kind==='submission'),false);
+test('direct and refreshed confirmation pages never create submissions',()=>{
+  const b=browser('/confirmation.html');browser('/confirmation.html',b.storage);
+  assert.equal(b.requests.some(e=>e.kind==='submission'),false);
+  assert.equal(b.tracking.attempt('9485257'),null);
 });
-test('matched return counts once; refresh never counts again; no email fields are read',async()=>{
-  const b=browser('/breakdowns.html');b.submit();const target=new URL(b.redirect.value);
-  assert.equal(target.origin,'https://www.thestables.music');
-  const returned=browser(target.pathname+target.search,b.storage);await settle();
-  assert.equal(returned.requests.filter(e=>e.kind==='submission').length,1);assert.equal(returned.win.location.search,'');
-  assert.equal(browser('/confirmation.html',b.storage).requests.some(e=>e.kind==='submission'),false);
-  assert.equal(JSON.stringify(b.requests).includes('email_address'),false);
+test('only explicit acceptance creates a submission and retries use a stable event ID',async()=>{
+  const b=browser('/breakdowns.html');const attempt=b.tracking.attempt('9485257');
+  assert.equal(b.requests.some(e=>e.kind==='submission'),false);
+  await b.tracking.accepted(attempt);await b.tracking.accepted(attempt);
+  const sent=b.requests.filter(e=>e.kind==='submission');assert.equal(sent.length,2);assert.equal(sent[0].id,sent[1].id);
+  assert.equal(sent[0].attempt_id,attempt.event.id);assert.equal(JSON.stringify(b.requests).includes('email_address'),false);
 });
-test('failed delivery retries with stable event ID after refresh',async()=>{
-  const b=browser('/workshops.html');b.submit();const target=new URL(b.redirect.value);
-  const failed=browser(target.pathname+target.search,b.storage,false);await settle();
-  const retried=browser('/workshops-confirmation.html',b.storage);await settle();
-  assert.equal(failed.requests.find(e=>e.kind==='submission').id,retried.requests.find(e=>e.kind==='submission').id);
+test('failed attempt writes never create an unmatched success',async()=>{
+  const b=browser('/workshops.html',new Map(),false);
+  assert.equal(await b.tracking.accepted(b.tracking.attempt('9486070')),false);
+  assert.equal(b.requests.some(e=>e.kind==='submission'),false);
 });
 test('server drops arbitrary data and rejects unknown forms, pages and missing attempts',()=>{
   const row={id:id(90),visit_id:id(91),kind:'attempt',page:'/breakdowns.html',form_id:'9485257',email:'private@example.test',metadata:{secret:'private'}};
@@ -84,13 +79,27 @@ test('Stables report pagination tolerates a smaller database row cap',async()=>{
 
 
 test('test visits retain measurements but stay out of ordinary totals', async () => {
-  const b = browser('/breakdowns.html?analytics=test'); b.submit();
+  const b = browser('/breakdowns.html?analytics=test'); await b.tracking.accepted(b.tracking.attempt('9485257'));
   assert.ok(b.requests.every(e => e.is_test === true));
-  const target = new URL(b.redirect.value);
-  const returned = browser(target.pathname + target.search, b.storage); await settle();
+  const returned = browser('/confirmation.html', b.storage);
   assert.ok(returned.requests.every(e => e.is_test === true));
   assert.equal(buildReport([{id:'test',is_test:true}], [{visit_id:'test',kind:'submission',form_id:'9485257'}], {}).visits, 0);
   const normal = browser('/?analytics=on', b.storage);
   assert.ok(normal.requests.every(e => e.is_test === false));
   assert.notEqual(normal.requests[0].visit_id, b.requests[0].visit_id);
+});
+
+const signupPath = process.env.STABLES_SOURCE ? new URL('./signup.js', new URL(process.env.STABLES_SOURCE, 'file://' + process.cwd() + '/')) : new URL('../../the-stables/signup.js', import.meta.url);
+const signupSource = (await readFile(signupPath,'utf8')).replace("import { tracker } from './analytics.js';", 'const tracker = null;');
+const { submitToKit } = await import('data:text/javascript;base64,' + Buffer.from(signupSource).toString('base64'));
+test('Kit delivery requires explicit success; non-success, errors and verification are not counted', async () => {
+  const form = {action:'https://app.kit.com/forms/9485257/subscriptions'};
+  const body = new FormData();body.set('email_address','test@example.test');
+  const send = async (result, ok=true) => submitToKit(form, async (url,options) => {
+    assert.equal(url,form.action);assert.equal(options.body,body);assert.equal(options.headers.Accept,'application/json');
+    return {ok,json:async()=>result};
+  }, () => body);
+  assert.equal(await send({status:'success'}),true);
+  for (const response of [{status:'error'},{status:'quarantined'},{status:'success',consent:{enabled:true}},{}]) await assert.rejects(()=>send(response));
+  await assert.rejects(()=>send({status:'success'},false));
 });
