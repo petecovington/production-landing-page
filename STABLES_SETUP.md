@@ -41,3 +41,31 @@ Docs: https://developers.kit.com/api-reference/forms/list-subscribers-for-a-form
 `npm run build`
 
 `npm run review` serves a synthetic preview at http://127.0.0.1:4175/dashboard with password `preview-only`. External services and form submissions are blocked in this preview. Sample numbers are not live measurements.
+
+## Daily funnel and post log (October 2026)
+
+The Stables panel now has Sydney-calendar daily visits and successful website signups, a manual Instagram post log, exact elapsed 48-hour/168-hour post windows, and bio/Story source totals. A signup is the first accepted website form submission in each anonymous visit. It is not an email confirmation or a unique person. Existing summary cards retain their rolling-period definitions.
+
+Usual daily numbers average eligible full Sydney days in the 28 calendar days before publication. Days overlapping any logged post's first 168 hours are excluded; seven eligible days are required. Expected window counts are daily averages times 2 or 7. They are descriptive comparisons, not causal post conversions. Partial windows show counts so far without a completed comparison. Missing coverage shows unavailable, not zero. No pre-start values are backfilled. Record all relevant posts for a useful baseline.
+
+Apply migrations/stables-funnel.sql once before deploying the dashboard, then publish analytics.js on The Stables. The migration adds a nullable fixed source category to stables_visits plus private stables_posts and stables_reporting tables. No old records are deleted. The conservative comparison coverage starts when this migration is applied, after the explicit Kit-acceptance tracker has already been verified live; earlier counts remain in existing summary cards but do not establish this baseline. Tables remain inaccessible to anon/authenticated roles. Post writes require the dashboard password and guard against stale edits.
+
+First-entry source is retained for the anonymous 30-minute tab visit. Only instagram_bio / instagram_story / other are accepted. Older visits retain an unknown source. Full URLs, referrers, arbitrary UTM text, emails and form contents are not stored. The source table uses visits beginning within the displayed Sydney days; accepted signups belong to those visits.
+
+Bio link: https://www.thestables.music/breakdowns.html?utm_source=instagram&utm_medium=bio
+
+Story link: https://www.thestables.music/breakdowns.html?utm_source=instagram&utm_medium=story
+
+The Story link distinguishes Story traffic as a group; it does not claim which individual post caused a signup. No Instagram connection or automated Instagram editing is used.
+
+### Kit confirmation timing
+
+The form subscriber endpoint returns current state, subscriber created_at and form added_at. The latter dates describe record creation and form joining, not confirmation. Changes in the active total are net changes, not new confirmations. No confirmation series is produced from these fields.
+
+Kit's current signed webhook docs offer subscriber.activated, emitted on transition to active, with an event created timestamp (occurrence time, not delivery time). Prospective activation measurement would require webhook availability, a signing secret, duplicate/re-activation handling, and a PDF-form membership check. Activation can include non-confirmation paths, so first double-opt-in confirmation semantics must be verified before labeling anything “new confirmations.” This account's webhook UI currently requests a paid upgrade. No upgrade, new credential, webhook or subscriber-data storage was performed.
+
+Practical current option: use the accepted website signup series and the separately labeled current active form total. If a future confirmed trend is required without webhooks, periodic aggregate snapshots can show net active subscriber change only, with that explicit label; they cannot recover actual confirmation times.
+
+Sources: https://developers.kit.com/api-reference/forms/list-subscribers-for-a-form ; https://developers.kit.com/webhooks/event-types ; https://developers.kit.com/webhooks/delivery-format
+
+Validation: focused Node tests cover exact boundaries, partial/missing windows, baseline exclusions/minimum coverage, Sydney DST, duplicate/test exclusion, auth/stale edits, input validation and source minimization. Local review server uses synthetic data and keeps post edits in memory; it never sends them to Supabase or Kit.

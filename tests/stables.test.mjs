@@ -103,3 +103,18 @@ test('Kit delivery requires explicit success; non-success, errors and verificati
   for (const response of [{status:'error'},{status:'quarantined'},{status:'success',consent:{enabled:true}},{}]) await assert.rejects(()=>send(response));
   await assert.rejects(()=>send({status:'success'},false));
 });
+
+test('Instagram tags use a fixed first-entry category and never retain arbitrary query data',()=>{
+  const b=browser('/breakdowns.html?utm_source=instagram&utm_medium=bio&email=private@example.test&utm_campaign=secret');
+  assert.equal(b.requests[0].source,'instagram_bio');
+  assert.equal(browser('/confirmation.html',b.storage).requests[0].source,'instagram_bio');
+  assert.equal(browser('/?utm_source=instagram&utm_medium=story',b.storage).requests[0].source,'instagram_bio');
+  assert.equal(browser('/?utm_source=instagram&utm_medium=story').requests[0].source,'instagram_story');
+  assert.equal(browser('/?utm_source=private@example.test').requests[0].source,'other');
+  assert.equal(JSON.stringify([...b.storage]).includes('private'),false);
+  assert.equal(JSON.stringify(b.requests).includes('secret'),false);
+});
+test('server drops arbitrary source text rather than storing it',async()=>{
+  const db=database(),r=res();await eventHandler(db)({method:'POST',headers:{origin:'https://www.thestables.music'},body:{id:id(70),visit_id:id(71),page:'/',kind:'page',source:'private@example.test'}},r);
+  assert.equal(r.code,200);assert.equal(db.writes[0].row.source,null);
+});
