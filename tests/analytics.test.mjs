@@ -138,11 +138,38 @@ test('write errors return failure; malformed requests never reach the database; 
   const bad = response(); await eventHandler(db)({ method: 'POST', body: null }, bad); assert.equal(bad.code, 400);
 });
 
-test('session and legacy exit failures are surfaced, missing duration is rejected', async () => {
-  const db = { from: () => ({ upsert: () => Promise.resolve({ error: {} }), update: () => ({ eq: () => Promise.resolve({ error: {} }) }) }) };
-  const res = response(); await sessionHandler(db)({ method: 'POST', headers: { 'user-agent': 'Safari' }, body: { id: uid(1), visitor_id: uid(101) } }, res); assert.equal(res.code, 503);
-  const bad = response(); await exitHandler(db)({ method: 'POST', body: { session_id: uid(1), is_bounce: true } }, bad); assert.equal(bad.code, 400);
-  const fail = response(); await exitHandler(db)({ method: 'POST', body: { session_id: uid(1), duration_seconds: 0, max_scroll_depth: 0, is_bounce: true } }, fail); assert.equal(fail.code, 503);
+test('v2 session write failures are surfaced and legacy exits never reach the database', async () => {
+  const db = { from: () => ({ upsert: () => Promise.resolve({ error: {} }) }) };
+  const res = response(); await sessionHandler(db)({ method: 'POST', headers: { 'user-agent': 'Safari' }, body: { id: uid(1), visitor_id: uid(101), measurement_version: 2 } }, res); assert.equal(res.code, 503);
+  const blockedDb = { from() { throw new Error('Legacy exit reached the database'); } };
+  const retired = response(); await exitHandler(blockedDb)({ method: 'POST', body: { session_id: uid(1), duration_seconds: 0, max_scroll_depth: 0, is_bounce: true } }, retired); assert.equal(retired.code, 410);
+});
+
+test('legacy and incorrectly typed version markers cannot recreate events or sessions', async () => {
+  const blockedDb = { from() { throw new Error('Unsupported client reached the database'); } };
+  for (const version of [undefined, null, 1, '2']) {
+    const e = response();
+    await eventHandler(blockedDb)({ method: 'POST', body: { ...event(1, 1, 'form', 'Started'), metadata: { measurement_version: version, sequence: 1 } } }, e);
+    assert.equal(e.code, 410);
+    const s = response();
+    await sessionHandler(blockedDb)({ method: 'POST', headers: {}, body: { id: uid(1), visitor_id: uid(101), measurement_version: version } }, s);
+    assert.equal(s.code, 410);
+  }
+});
+
+test('actual v2 client session and event payloads remain accepted after retirement', async () => {
+  const b = fakeBrowser(); b.client.init(); b.client.track('form', 'Started');
+  const writes = [];
+  const db = { from(table) { return { insert(row) { writes.push({ table, row }); return Promise.resolve({ error: null }); }, upsert(row) { writes.push({ table, row }); return Promise.resolve({ error: null }); } }; } };
+  for (const { url, ...body } of b.requests) {
+    const res = response();
+    const handler = url.endsWith('/session') ? sessionHandler(db) : eventHandler(db);
+    await handler({ method: 'POST', headers: { 'user-agent': 'Safari' }, body: JSON.stringify(body) }, res);
+    assert.equal(res.code, 200);
+  }
+  assert.equal(writes.filter(w => w.table === 'sessions').length, 1);
+  assert.ok(writes.some(w => w.table === 'events' && w.row.event_type === 'session_snapshot'));
+  assert.ok(writes.some(w => w.table === 'events' && w.row.event_type === 'form'));
 });
 
 test('dashboard auth/period validation and read failures never expose partial totals', async () => {
@@ -184,7 +211,7 @@ test('new session writes minimise referral/UA data and initialise bounce as unkn
   let stored;
   const db = { from: () => ({ upsert: row => { stored = row; return Promise.resolve({ error: null }); } }) };
   const res = response(); await sessionHandler(db)({ method: 'POST', headers: { 'user-agent': 'Safari' }, body: {
-    id: uid(1), visitor_id: uid(101), referrer: 'https://example.test/path?email=PRIVATE', user_agent: 'PRIVATE', message: 'PRIVATE', utm_source: 'ig',
+    id: uid(1), visitor_id: uid(101), measurement_version: 2, referrer: 'https://example.test/path?email=PRIVATE', user_agent: 'PRIVATE', message: 'PRIVATE', utm_source: 'ig',
   } }, res);
   assert.equal(res.code, 200); assert.equal(stored.referrer, 'https://example.test'); assert.equal(stored.is_bounce, null);
   assert.equal(JSON.stringify(stored).includes('PRIVATE'), false); assert.equal(stored.user_agent, undefined);
