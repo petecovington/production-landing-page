@@ -177,7 +177,7 @@ const ContactForm = () => {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <p className="text-lg mb-8 text-[#2D241E]/80 text-center">Tell me a bit about your project. I'd love to hear what you're working on.</p>
+      <p className="text-lg mb-8 text-[#2D241E]/80 text-center">Tell me about your songs and what you want to make. I'll get back to you about fit, timing and next steps.</p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
@@ -245,7 +245,7 @@ const ContactForm = () => {
 
         <div className="flex gap-4">
           <Button type="submit" variant="primary" disabled={isSubmitting} className="flex-1">
-            {isSubmitting ? 'Sending...' : 'Submit'}
+            {isSubmitting ? 'Sending...' : 'Send project enquiry'}
           </Button>
         </div>
       </form>
@@ -463,7 +463,7 @@ export default function App() {
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <Button variant="primary" onClick={() => { analytics.track('click', 'Email Form - Hero'); scrollToContact(); }}>Contact Pete</Button>
+              <Button variant="primary" onClick={() => { analytics.track('click', 'Email Form - Hero'); scrollToContact(); }}>Plan your next record</Button>
             </div>
           </FadeIn>
         </div>
@@ -622,7 +622,7 @@ export default function App() {
               </p>
             </div>
             <h3 className="text-xl md:text-2xl font-serif font-bold mt-12 mb-10">The best way to explore how we can bring your vision to life is with a simple, no-pressure chat to see if we're a good fit.</h3>
-            <Button variant="primary" onClick={() => { analytics.track('click', 'Tell me about your project - Process'); scrollToContact(); }}>Tell me about your project</Button>
+            <Button variant="primary" onClick={() => { analytics.track('click', 'Tell me about your project - Process'); scrollToContact(); }}>Plan your next record</Button>
           </div>
         </FadeIn>
       </Section>
@@ -659,7 +659,7 @@ export default function App() {
          <div className="absolute inset-0 z-0 opacity-10" style={{ backgroundImage: `radial-gradient(#D69E2E 1px, transparent 1px)`, backgroundSize: '30px 30px' }}></div>
 
          <div className="relative z-10 max-w-3xl mx-auto">
-            <h2 className="text-3xl md:text-6xl font-serif font-black text-[#2D241E] mb-12 md:mb-16">Let's talk about<br/>your music</h2>
+            <h2 className="text-3xl md:text-6xl font-serif font-black text-[#2D241E] mb-12 md:mb-16">Plan your<br/>next record</h2>
             <ContactForm />
          </div>
       </section>
