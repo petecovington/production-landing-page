@@ -177,7 +177,7 @@ const ContactForm = () => {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <p className="text-lg mb-8 text-[#2D241E]/80 text-center">Tell me about your songs and what you want to make. I'll get back to you about fit, timing and next steps.</p>
+      <p className="text-lg mb-8 text-[#2D241E]/80 text-center">Tell me about your songs and the record you’d love to make.</p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
